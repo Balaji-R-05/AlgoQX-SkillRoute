@@ -165,6 +165,8 @@ const ProfileSetup = () => {
     interests: [],
     goals: '',
     experience: '',
+    target_companies: '',
+    exam_dates: '',
     time_per_week: 10,
     learning_pace: 'medium',
     clarity: {
@@ -663,6 +665,28 @@ const ProfileSetup = () => {
                         value={formData.experience}
                         onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
                         className="mt-1.5 min-h-[80px] sm:min-h-[100px] bg-white border-gray-200 focus:border-black focus:ring-black"
+                      />
+                    </div>
+
+                    <div className="pt-3 border-t border-gray-100">
+                      <Label htmlFor="target_companies" className="text-sm sm:text-base font-bold text-gray-900">Target Companies (Optional)</Label>
+                      <Textarea
+                        id="target_companies"
+                        placeholder="e.g. Google, Microsoft, Stripe (comma separated)"
+                        value={formData.target_companies}
+                        onChange={(e) => setFormData({ ...formData, target_companies: e.target.value })}
+                        className="mt-1.5 min-h-[60px] bg-white border-gray-200 focus:border-black focus:ring-black"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="exam_dates" className="text-sm sm:text-base font-bold text-gray-900">Upcoming Exams (Optional)</Label>
+                      <Textarea
+                        id="exam_dates"
+                        placeholder="e.g. Data Structures: 2024-05-15 (comma separated)"
+                        value={formData.exam_dates}
+                        onChange={(e) => setFormData({ ...formData, exam_dates: e.target.value })}
+                        className="mt-1.5 min-h-[60px] bg-white border-gray-200 focus:border-black focus:ring-black"
                       />
                     </div>
 

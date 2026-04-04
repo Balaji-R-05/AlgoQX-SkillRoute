@@ -1,5 +1,5 @@
 import React from 'react';
-import { Compass, User, LogOut, Moon, Sun, BookOpen, Calendar, LayoutGrid } from 'lucide-react';
+import { Compass, User, LogOut, Moon, Sun, BookOpen, Calendar, LayoutGrid, Activity, Brain, GraduationCap, Briefcase } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -72,6 +72,21 @@ export function FloatingHeader({ onLogout }) {
 						size="sm"
 						className={cn(
 							"flex items-center gap-2 px-3 h-8 rounded-lg text-xs font-semibold transition-all",
+							location.pathname === '/teacher' 
+								? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white" 
+								: "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+						)}
+						onClick={() => navigate('/teacher')}
+					>
+						<Brain className="size-3.5" />
+						<span className="hidden md:inline">Tutor</span>
+					</Button>
+
+					<Button
+						variant="ghost"
+						size="sm"
+						className={cn(
+							"flex items-center gap-2 px-3 h-8 rounded-lg text-xs font-semibold transition-all",
 							location.pathname === '/schedules' 
 								? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white" 
 								: "text-gray-500 hover:text-gray-900 dark:hover:text-white"
@@ -80,6 +95,36 @@ export function FloatingHeader({ onLogout }) {
 					>
 						<Calendar className="size-3.5" />
 						<span className="hidden md:inline">Schedules</span>
+					</Button>
+					
+					<Button
+						variant="ghost"
+						size="sm"
+						className={cn(
+							"flex items-center gap-2 px-3 h-8 rounded-lg text-xs font-semibold transition-all",
+							location.pathname === '/analytics' 
+								? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white" 
+								: "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+						)}
+						onClick={() => navigate('/analytics')}
+					>
+						<Activity className="size-3.5" />
+						<span className="hidden md:inline">Analytics</span>
+					</Button>
+
+					<Button
+						variant="ghost"
+						size="sm"
+						className={cn(
+							"flex items-center gap-2 px-3 h-8 rounded-lg text-xs font-semibold transition-all",
+							location.pathname === '/mock-interview' 
+								? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white" 
+								: "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+						)}
+						onClick={() => navigate('/mock-interview')}
+					>
+						<Brain className="size-3.5" />
+						<span className="hidden lg:inline">Interview</span>
 					</Button>
 				</div>
 

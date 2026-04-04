@@ -92,9 +92,17 @@ async def sync_resources(
     """
     Syncs the database with the S3 bucket's files for this user.
     """
-    # Files are stored as uploads/{user_id}/{uuid}/{filename}
-    prefix = f"uploads/{user_id}/"
-    s3_keys = s3_service.list_all_files(prefix)
+    # Find files belonging to this user specifically, or root files in 'uploads/'
+    all_s3_keys = s3_service.list_all_files("uploads/")
+    s3_keys = []
+    for key in all_s3_keys:
+        parts = key.split("/")
+        if len(parts) == 2:
+            # e.g. uploads/filename.ext (no specific user dir, assume legacy/shared)
+            s3_keys.append(key)
+        elif len(parts) > 2 and parts[1] == user_id:
+            # e.g. uploads/c4dO3oV2.../uuid/filename.ext
+            s3_keys.append(key)
     
     if not s3_keys:
         return {"status": "success", "new_resources": 0, "message": "No new files found in S3."}

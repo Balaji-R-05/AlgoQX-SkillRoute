@@ -8,6 +8,11 @@ import Profile from './pages/Profile'
 import ProfileSetup from './components/ProfileSetup'
 import ResourceHub from './pages/ResourceHub'
 import ScheduleGenerator from './pages/ScheduleGenerator'
+import Analytics from './pages/Analytics'
+import MockInterview from './pages/MockInterview'
+import ExamPrep from './pages/ExamPrep'
+import PlacementPrep from './pages/PlacementPrep'
+import Teacher from './pages/Teacher'
 import SignIn from './components/ui/SignIn'
 import SignUp from './components/ui/SignUp'
 
@@ -71,6 +76,26 @@ function App() {
         <Route
           path="/schedules"
           element={user ? <ScheduleGenerator /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/analytics"
+          element={user ? <Analytics /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/mock-interview"
+          element={user ? <MockInterview /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/exam-prep"
+          element={user ? <ExamPrep /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/placement-prep"
+          element={user ? <PlacementPrep /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/teacher"
+          element={user ? <Teacher /> : <Navigate to="/login" />}
         />
         <Route
           path="/"

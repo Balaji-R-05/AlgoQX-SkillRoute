@@ -192,7 +192,11 @@ Use real URLs exactly like these:
 - Each milestone: name, description, estimated_hours, resources (2-3 items)
 
 ## INPUT PROFILE FIELDS
-name, education, skills, interests, goals, experience, time_per_week, learning_pace, clarity_score
+name, education, skills, interests, goals, experience, target_companies, exam_dates, time_per_week, learning_pace, clarity_score
+
+## EXAM & PLACEMENT AWARENESS
+- If `target_companies` are provided, prioritize skills and interview topics relevant to those companies.
+- If `exam_dates` are provided, adjust the timeline and early phases to cover those topics BEFORE the exam dates to reduce academic stress and improve readiness.
 
 ## CLARITY SCORE GUIDE
 - 0-39: Evaluate 5+ careers broadly

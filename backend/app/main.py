@@ -8,11 +8,14 @@ from app.routes.quiz import router as quiz_router
 from app.routes.jobs import router as jobs_router
 from app.routes.resources import router as resources_router
 from app.routes.schedules import router as schedules_router
+from app.routes.wellness import router as wellness_router
+from app.routes.interviews import router as interviews_router
+from app.routes.teaching import router as teaching_router
 
 app = FastAPI(
     title=PROJECT_NAME,
-    description="SkillRoute – AI-powered career path & learning roadmap agent",
-    version="1.0.0"
+    description="SkillRoute – Stress-aware academic command center for exams & placements",
+    version="2.0.0"
 )
 
 origins = [
@@ -24,9 +27,9 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for now to fix CORS
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
     max_age=3600,
@@ -39,6 +42,9 @@ app.include_router(quiz_router)
 app.include_router(jobs_router)
 app.include_router(resources_router, prefix="/api")
 app.include_router(schedules_router)
+app.include_router(wellness_router)
+app.include_router(interviews_router)
+app.include_router(teaching_router)
 
 @app.get("/")
 def root():
@@ -51,4 +57,5 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+
 

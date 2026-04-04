@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { FloatingHeader } from '../components/ui/floating-header';
 import ResourceCard from '../components/ResourceCard';
+import TeachingPanel from '../components/TeachingPanel';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Loader2, RefreshCw, Plus, Search, Sparkles, FileText } from 'lucide-react';
@@ -18,6 +19,8 @@ export default function ResourceHub() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  
+  const [teachingResource, setTeachingResource] = useState(null);
 
   // Initialize from cache
   useEffect(() => {
@@ -251,11 +254,23 @@ export default function ResourceHub() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {resources.map((res, index) => (
-              <ResourceCard key={res.id || index} resource={res} />
+              <ResourceCard 
+                key={res.id || index} 
+                resource={res} 
+                onTeachClick={setTeachingResource}
+              />
             ))}
           </div>
         )}
       </main>
+
+      {/* Teaching Panel Overlay */}
+      {teachingResource && (
+        <TeachingPanel 
+          resource={teachingResource} 
+          onClose={() => setTeachingResource(null)} 
+        />
+      )}
     </div>
   );
 }

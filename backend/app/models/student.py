@@ -23,6 +23,14 @@ class StudentProfile(BaseModel):
         example=60,
         description="Career clarity score from assessment (0=exploring, 100=focused)"
     )
+    target_companies: Optional[str] = Field(
+        None, example="Google, Microsoft, Stripe",
+        description="Companies the student is targeting for placements"
+    )
+    exam_dates: Optional[str] = Field(
+        None, example="Data Structures: 2024-05-15, Algorithms: 2024-05-20",
+        description="Upcoming university exam dates"
+    )
 
 
 class ClarityAssessment(BaseModel):

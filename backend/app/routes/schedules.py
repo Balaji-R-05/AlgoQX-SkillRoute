@@ -62,14 +62,7 @@ async def api_save_schedule(
     user_id: str = Depends(verify_firebase_token),
     db: AsyncSession = Depends(get_db)
 ):
-    # Archive existing active schedules for this user
-    # Simplified logic: just set status="archived"
-    from sqlalchemy import update
-    stmt = update(StudySchedule).where(
-        and_(StudySchedule.user_id == user_id, StudySchedule.status == "active")
-    ).values(status="archived")
-    await db.execute(stmt)
-
+    # We removed archiving active schedules to allow multiple overlapping schedules.
     new_schedule = StudySchedule(
         user_id=user_id,
         title=input_data.title,
@@ -96,7 +89,8 @@ async def api_get_active_schedule(
         and_(StudySchedule.user_id == user_id, StudySchedule.status == "active")
     )
     result = await db.execute(query)
-    schedule = result.scalar_one_or_none()
+    # Using .first() instead of .scalar_one_or_none() to avoid MultipleResultsFound
+    schedule = result.scalars().first()
     
     if not schedule:
         return {"active": False}
@@ -110,21 +104,74 @@ async def api_get_active_schedule(
         "schedule": schedule.schedule_json
     }
 
+@router.get("/active/all")
+async def api_get_all_active_schedules(
+    user_id: str = Depends(verify_firebase_token),
+    db: AsyncSession = Depends(get_db)
+):
+    query = select(StudySchedule).where(
+        and_(StudySchedule.user_id == user_id, StudySchedule.status == "active")
+    )
+    result = await db.execute(query)
+    schedules = result.scalars().all()
+    
+    return [{
+        "id": s.id,
+        "title": s.title,
+        "start_date": s.start_date,
+        "end_date": s.end_date,
+        "event_type": s.event_type if hasattr(s, 'event_type') else 'general',
+        "schedule": s.schedule_json
+    } for s in schedules]
+
+@router.get("/today")
+async def api_get_today_tasks(
+    user_id: str = Depends(verify_firebase_token),
+    db: AsyncSession = Depends(get_db)
+):
+    # Aggregate today's tasks from all active schedules
+    query = select(StudySchedule).where(
+        and_(StudySchedule.user_id == user_id, StudySchedule.status == "active")
+    )
+    result = await db.execute(query)
+    schedules = result.scalars().all()
+    
+    today = date.today()
+    all_today_tasks = []
+    
+    for schedule in schedules:
+        passed_days = (today - schedule.start_date).days + 1
+        today_plan = next((d for d in schedule.schedule_json if d.get("day") == passed_days), None)
+        if today_plan:
+            all_today_tasks.append({
+                "schedule_id": schedule.id,
+                "schedule_title": schedule.title,
+                "event_type": schedule.event_type if hasattr(schedule, 'event_type') else 'general',
+                "topic": today_plan.get("topic", ""),
+                "tasks": today_plan.get("tasks", []),
+                "priority": today_plan.get("priority", "medium")
+            })
+            
+    return {"today_tasks": all_today_tasks}
+
 @router.get("/checkin/today")
 async def api_get_today_checkin(
     user_id: str = Depends(verify_firebase_token),
     db: AsyncSession = Depends(get_db)
 ):
-    # 1. Find active schedule
+    # 1. Find active schedules
     query = select(StudySchedule).where(
         and_(StudySchedule.user_id == user_id, StudySchedule.status == "active")
     )
     result = await db.execute(query)
-    schedule = result.scalar_one_or_none()
+    schedules = result.scalars().all()
     
-    if not schedule:
-        raise HTTPException(status_code=404, detail="No active schedule found")
+    if not schedules:
+        return {"status": "no_plan_for_today"}
 
+    # Pick the primary schedule (e.g. the first one) to anchor the DailyCheckin record
+    schedule = schedules[0]
+    
     # 2. Check if check-in already exists for today
     today = date.today()
     checkin_query = select(DailyCheckin).where(
@@ -136,15 +183,18 @@ async def api_get_today_checkin(
     if existing_checkin:
         return existing_checkin
 
-    # 3. If not, generate it based on today's tasks in schedule_json
-    # Find today's plan in schedule_json
-    passed_days = (today - schedule.start_date).days + 1
-    today_plan = next((d for d in schedule.schedule_json if d.get("day") == passed_days), None)
+    # 3. If not, aggregate today's tasks from all active schedules
+    aggregated_topics = []
+    for s in schedules:
+        passed_days = (today - s.start_date).days + 1
+        today_plan = next((d for d in s.schedule_json if d.get("day") == passed_days), None)
+        if today_plan:
+            aggregated_topics.append(today_plan.get("topic", "") + " " + (", ".join(today_plan.get("tasks", []))))
     
-    if not today_plan:
+    if not aggregated_topics:
         return {"status": "no_plan_for_today"}
 
-    topics = today_plan.get("topic", "") + " " + (", ".join(today_plan.get("tasks", [])))
+    topics = " | ".join(aggregated_topics)
     
     try:
         mcqs = await generate_daily_mcqs(topics)

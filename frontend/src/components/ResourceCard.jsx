@@ -12,7 +12,7 @@ const getIcon = (type) => {
   }
 };
 
-export default function ResourceCard({ resource }) {
+export default function ResourceCard({ resource, onTeachClick }) {
   return (
     <Card className="hover:shadow-xl transition-all group flex flex-col h-full border-gray-100 dark:border-zinc-800 rounded-2xl shadow-md">
       <CardHeader className="flex flex-row items-start justify-between pb-2 space-y-0">
@@ -35,7 +35,7 @@ export default function ResourceCard({ resource }) {
         )}
       </CardContent>
       
-      <CardFooter className="pt-4 border-t border-gray-100 dark:border-gray-800">
+      <CardFooter className="pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-col gap-2">
         <Button 
           variant="outline" 
           className="w-full justify-between hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all"
@@ -43,6 +43,13 @@ export default function ResourceCard({ resource }) {
         >
           <span>Open Resource</span>
           <ExternalLink className="h-4 w-4" />
+        </Button>
+        <Button 
+          className="w-full justify-between bg-teal-600 hover:bg-teal-700 text-white transition-all shadow-md"
+          onClick={() => onTeachClick && onTeachClick(resource)}
+        >
+          <span>Teach Me This</span>
+          <BookOpen className="h-4 w-4" />
         </Button>
       </CardFooter>
     </Card>
