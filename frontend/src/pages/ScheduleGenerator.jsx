@@ -41,6 +41,19 @@ export default function ScheduleGenerator() {
   const [generatedPlan, setGeneratedPlan] = useState(null);
   const navigate = useNavigate();
 
+  // Auto-calculate days based on startDate and eventDate (deadline)
+  useEffect(() => {
+    if (startDate && eventDate) {
+      const s = new Date(startDate);
+      const e = new Date(eventDate);
+      const diff = Math.floor((e - s) / (1000 * 60 * 60 * 24));
+      // "One day before deadline" logic: Study duration equals distance to deadline.
+      // E.g., Start 4th, Deadline 10th -> 6 Days (4, 5, 6, 7, 8, 9)
+      const calculatedDays = Math.max(0, diff);
+      setDays(calculatedDays);
+    }
+  }, [startDate, eventDate]);
+
   const fetchResources = async () => {
     if (!user) return;
     try {
@@ -124,6 +137,7 @@ export default function ScheduleGenerator() {
         start_date: startDate,
         end_date: end_date.toISOString().split('T')[0],
         daily_hours: parseInt(dailyHours),
+        event_type: eventType,
         schedule_json: generatedPlan.daily_plans
       }, {
         headers: { 
@@ -306,15 +320,10 @@ export default function ScheduleGenerator() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="block text-sm font-black uppercase">Study Duration (Days)</label>
-                      <Input 
-                        type="number"
-                        min="1"
-                        max="365"
-                        value={days}
-                        onChange={(e) => setDays(e.target.value)}
-                        className="rounded-xl border border-gray-200 h-12 font-medium"
-                      />
+                      <label className="block text-sm font-black uppercase">Study Duration (Auto)</label>
+                      <div className="h-12 flex items-center px-4 rounded-xl border border-dashed border-blue-200 bg-blue-50 font-black text-blue-700">
+                        {days} Days <span className="ml-2 text-[10px] opacity-60">(Ending 1 day before deadline)</span>
+                      </div>
                     </div>
                   </div>
 

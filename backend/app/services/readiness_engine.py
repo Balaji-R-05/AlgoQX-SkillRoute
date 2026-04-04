@@ -7,43 +7,50 @@ and deadline pressure into a single actionable readiness score.
 """
 import os
 from datetime import date, timedelta
-from typing import Optional
+from typing import Optional, List, Dict, Any
+import json
 from sqlalchemy import select, and_, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.schedule import (
-    WellnessCheckin, ReadinessSnapshot, StudySchedule, DailyCheckin
+    WellnessCheckin, ReadinessSnapshot, StudySchedule, DailyCheckin, QuizAttempt
 )
 
+def safe_json_parse(data: Any) -> Any:
+    """Helper to safely handle JSON strings or objects."""
+    if data is None: return None
+    if isinstance(data, str):
+        try:
+            return json.loads(data)
+        except:
+            return None
+    return data
 
 async def get_recent_quiz_scores(db: AsyncSession, user_id: str, days: int = 7) -> dict:
-    """Get average quiz score from the last N days of daily check-ins."""
+    """Get average quiz score from the last N days from all QuizAttempt records."""
     cutoff = date.today() - timedelta(days=days)
-    query = select(DailyCheckin).where(
+    query = select(QuizAttempt).where(
         and_(
-            DailyCheckin.user_id == user_id,
-            DailyCheckin.is_completed == 1,
-            DailyCheckin.date >= cutoff
+            QuizAttempt.user_id == user_id,
+            QuizAttempt.date >= cutoff
         )
     )
     result = await db.execute(query)
-    checkins = result.scalars().all()
+    attempts = result.scalars().all()
 
-    if not checkins:
+    if not attempts:
         return {"avg_score": 0.0, "total_quizzes": 0, "scores": []}
 
     scores = []
-    for c in checkins:
-        if c.results_json and "score" in c.results_json:
-            total = c.results_json.get("total", 5)
-            pct = (c.results_json["score"] / total) * 100 if total > 0 else 0
-            scores.append(pct)
+    for a in attempts:
+        pct = (a.score / a.total) * 100 if a.total > 0 else 0
+        scores.append(pct)
 
     avg = sum(scores) / len(scores) if scores else 0.0
     return {"avg_score": round(avg, 1), "total_quizzes": len(scores), "scores": scores}
 
 
 async def get_schedule_adherence(db: AsyncSession, user_id: str) -> dict:
-    """Calculate task completion rate across active schedules."""
+    """Calculate task completion rate across active schedules using granular task data."""
     query = select(StudySchedule).where(
         and_(StudySchedule.user_id == user_id, StudySchedule.status == "active")
     )
@@ -57,15 +64,34 @@ async def get_schedule_adherence(db: AsyncSession, user_id: str) -> dict:
     completed_tasks = 0
 
     for schedule in schedules:
-        if schedule.schedule_json:
-            today_day = (date.today() - schedule.start_date).days + 1
-            for day_plan in schedule.schedule_json:
-                day_num = day_plan.get("day", 0)
-                if day_num <= today_day:
+        s_json = schedule.schedule_json
+        if not s_json:
+            continue
+            
+        if isinstance(s_json, str):
+            import json
+            try:
+                s_json = json.loads(s_json)
+            except:
+                continue
+                
+        today_day = (date.today() - schedule.start_date).days + 1
+        for day_plan in s_json:
+            day_num = day_plan.get("day", 0)
+            if day_num <= today_day:
                     tasks = day_plan.get("tasks", [])
-                    total_tasks += len(tasks) if isinstance(tasks, list) else 1
-                    if day_plan.get("status") == "completed":
-                        completed_tasks += len(tasks) if isinstance(tasks, list) else 1
+                    num_tasks = len(tasks) if isinstance(tasks, list) else 1
+                    
+                    # New granular check using task_statuses
+                    task_statuses = day_plan.get("task_statuses", [])
+                    if task_statuses:
+                        completed_in_day = task_statuses.count("completed")
+                        completed_tasks += completed_in_day
+                    elif day_plan.get("status") == "completed":
+                        # Fallback for old schedules with only binary status
+                        completed_tasks += num_tasks
+                        
+                    total_tasks += num_tasks
 
     rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0.0
     return {
@@ -91,7 +117,12 @@ async def get_deadline_pressure(db: AsyncSession, user_id: str) -> dict:
     if not schedules:
         return {"pressure": "none", "nearest_days": None, "nearest_event": None}
 
-    nearest = schedules[0]
+    # Filter out schedules with null event_date just in case
+    valid_schedules = [s for s in schedules if s.event_date is not None]
+    if not valid_schedules:
+        return {"pressure": "none", "nearest_days": None, "nearest_event": None}
+
+    nearest = valid_schedules[0]
     days_until = (nearest.event_date - date.today()).days
 
     if days_until <= 3:
@@ -105,11 +136,11 @@ async def get_deadline_pressure(db: AsyncSession, user_id: str) -> dict:
 
     return {
         "pressure": pressure,
-        "nearest_days": days_until,
-        "nearest_event": nearest.event_name,
+        "nearest_days": max(0, days_until),
+        "nearest_event": getattr(nearest, 'event_name', 'Upcoming Event'),
         "upcoming": [
-            {"event": s.event_name, "days": (s.event_date - date.today()).days}
-            for s in schedules[:5]
+            {"event": getattr(s, 'event_name', 'Event'), "days": max(0, (s.event_date - date.today()).days)}
+            for s in valid_schedules[:5]
         ]
     }
 
@@ -312,12 +343,20 @@ async def compute_composite_readiness(
     streak_data = await get_streak(db, user_id)
 
     # 3. Calculate perceived readiness (from self-rating)
-    perceived = wellness.readiness if wellness else 3.0
+    perceived = 3.0
+    if wellness:
+        val = getattr(wellness, 'readiness', 3.0)
+        perceived = float(val) if val is not None else 3.0
 
     # 4. Calculate predicted readiness (from objective data)
-    quiz_factor = quiz_data["avg_score"] / 100 * 5      # normalize to 1-5
-    adherence_factor = adherence_data["adherence_rate"] / 100 * 5
-    streak_factor = min(streak_data["current_streak"] / 7, 1.0) * 5
+    q_avg = quiz_data.get("avg_score", 0.0)
+    quiz_factor = (float(q_avg) / 100 * 5) if q_avg else 0.0
+    
+    adh_rate = adherence_data.get("adherence_rate", 0.0)
+    adherence_factor = (float(adh_rate) / 100 * 5) if adh_rate else 0.0
+    
+    streak_val = streak_data.get("current_streak", 0)
+    streak_factor = min(float(streak_val) / 7, 1.0) * 5 if streak_val else 0.0
 
     # Weighted average for predicted readiness
     predicted = (

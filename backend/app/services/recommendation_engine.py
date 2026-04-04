@@ -49,7 +49,7 @@ Response Schema for each object:
     "type": "wellness | academic | placement | general",
     "message": "The actionable advice",
     "priority": "critical | high | medium | low",
-    "action_type": "break | review | mock_interview | study",
+    "action_type": "break | review | mock_interview | study | relief",
     "action_link": "/url-string" (e.g. /mock-interview, /study-materials, /analytics, /roadmaps)
 }"""
 
@@ -132,7 +132,7 @@ Generate 3 recommendations in JSON format."""
                 "type": "wellness",
                 "message": "Your stress levels are high. Focus only on light revision today and skip learning complex new topics.",
                 "priority": "critical",
-                "action_type": "break",
+                "action_type": "relief",
                 "action_link": None
             })
             

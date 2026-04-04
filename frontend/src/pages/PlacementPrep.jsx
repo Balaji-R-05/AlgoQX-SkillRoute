@@ -18,6 +18,7 @@ export default function PlacementPrep() {
   const navigate = useNavigate();
   const [interviews, setInterviews] = useState([]);
   const [readiness, setReadiness] = useState(null);
+  const [masteryData, setMasteryData] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,9 +30,10 @@ export default function PlacementPrep() {
       const token = await user.getIdToken();
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [intRes, readRes] = await Promise.allSettled([
+      const [intRes, readRes, masteryRes] = await Promise.allSettled([
         axios.get(`${API}/api/interviews`, { headers }),
         axios.get(`${API}/api/wellness/today`, { headers }),
+        axios.get(`${API}/api/quiz/mastery`, { headers }),
       ]);
 
       if (intRes.status === 'fulfilled') {
@@ -40,6 +42,9 @@ export default function PlacementPrep() {
       if (readRes.status === 'fulfilled') {
         setReadiness(readRes.value.data?.readiness || readRes.value.data);
       }
+      if (masteryRes.status === 'fulfilled') {
+        setMasteryData(masteryRes.value.data || {});
+      }
     } catch (e) {
       console.error('Failed to load data', e);
     } finally {
@@ -47,11 +52,67 @@ export default function PlacementPrep() {
     }
   };
 
+  const getCategoryReadiness = (topics) => {
+    const scores = [];
+    topics.forEach(topic => {
+      if (masteryData[topic] && masteryData[topic].total > 0) {
+        scores.push((masteryData[topic].correct / masteryData[topic].total) * 100);
+      }
+    });
+    return scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+  };
+
+  const getFocusPriority = () => {
+    const priorities = [];
+    Object.entries(masteryData).forEach(([topic, data]) => {
+      if (data.total > 0) {
+        const score = (data.correct / data.total) * 100;
+        if (score < 70) {
+          priorities.push({ topic, score: Math.round(score), total: data.total });
+        }
+      }
+    });
+    // Add default priorities if none found
+    if (priorities.length === 0) {
+      return [
+        { topic: 'DSA Fundamentals', score: 0, total: 0 },
+        { topic: 'System Design', score: 0, total: 0 }
+      ];
+    }
+    return priorities.sort((a, b) => a.score - b.score).slice(0, 3);
+  };
+
+  const priorities = getFocusPriority();
+
   const prepAreas = [
-    { name: 'DSA & Coding', icon: Code, color: 'text-blue-500', bgColor: 'bg-blue-50 dark:bg-blue-950/30', readiness: 65 },
-    { name: 'Technical Concepts', icon: Brain, color: 'text-purple-500', bgColor: 'bg-purple-50 dark:bg-purple-950/30', readiness: 55 },
-    { name: 'Aptitude', icon: Zap, color: 'text-amber-500', bgColor: 'bg-amber-50 dark:bg-amber-950/30', readiness: 70 },
-    { name: 'Communication', icon: Users, color: 'text-teal-500', bgColor: 'bg-teal-50 dark:bg-teal-950/30', readiness: 80 },
+    { 
+      name: 'DSA & Coding', 
+      icon: Code, 
+      color: 'text-blue-500', 
+      bgColor: 'bg-blue-50 dark:bg-blue-950/30', 
+      readiness: getCategoryReadiness(['Data Structures', 'Algorithms', 'Competitive Programming']) || 65 
+    },
+    { 
+      name: 'Technical Concepts', 
+      icon: Brain, 
+      color: 'text-purple-500', 
+      bgColor: 'bg-purple-50 dark:bg-purple-950/30', 
+      readiness: getCategoryReadiness(['Operating Systems', 'DBMS', 'Computer Networks', 'Java', 'Python', 'Web Development']) || 55 
+    },
+    { 
+      name: 'Aptitude', 
+      icon: Zap, 
+      color: 'text-amber-500', 
+      bgColor: 'bg-amber-50 dark:bg-amber-950/30', 
+      readiness: getCategoryReadiness(['Aptitude', 'Mathematics', 'Logical Reasoning']) || 70 
+    },
+    { 
+      name: 'Communication', 
+      icon: Users, 
+      color: 'text-teal-500', 
+      bgColor: 'bg-teal-50 dark:bg-teal-950/30', 
+      readiness: 80 
+    },
   ];
 
   const avgInterviewScore = interviews.length > 0
@@ -72,6 +133,72 @@ export default function PlacementPrep() {
             <p className="text-gray-500 dark:text-gray-400 mt-1">
               Sharpen your coding skills, ace interviews, and land your dream role.
             </p>
+          </div>
+
+          {/* Strategic Roadmap - NEW */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <Card className="lg:col-span-2 border-4 border-black dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-none overflow-hidden hover:translate-x-1 hover:translate-y-1 transition-transform">
+              <CardHeader className="bg-violet-500 text-white border-b-4 border-black">
+                <CardTitle className="text-xl flex items-center gap-2 font-black uppercase italic tracking-tighter">
+                  <TrendingUp className="h-6 w-6" />
+                  AI Placement Strategy
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-sm font-black uppercase text-zinc-500 mb-3 flex items-center gap-2">
+                       <Zap className="h-4 w-4 text-amber-500" /> High-Impact Focus Areas
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {priorities.map((p, idx) => (
+                        <div key={idx} className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-2xl border-2 border-black flex flex-col justify-between">
+                          <span className="font-black text-xs uppercase tracking-tight truncate">{p.topic}</span>
+                          <div className="mt-4">
+                            <span className="text-2xl font-black text-violet-600 dark:text-violet-400">{p.score}%</span>
+                            <div className="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full mt-1 overflow-hidden">
+                              <div className="h-full bg-violet-500" style={{ width: `${p.score}%` }} />
+                            </div>
+                            <p className="text-[10px] font-bold text-zinc-500 mt-2">Critical gap detected</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border-2 border-black rounded-2xl">
+                    <p className="text-xs font-bold text-amber-800 dark:text-amber-200 leading-relaxed italic">
+                      "Strategic Insight: Your {priorities[0]?.topic} mastery is currently below the 70% threshold. Focus on breadth of patterns rather than depth until you hit 85% to maximize interview coverage."
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-4 border-black dark:border-zinc-800 bg-[#bae6fd] shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-none hover:-translate-x-1 hover:translate-y-1 transition-transform">
+               <CardHeader className="border-b-4 border-black">
+                 <CardTitle className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
+                    <Target className="h-5 w-5" /> Recommended Today
+                 </CardTitle>
+               </CardHeader>
+               <CardContent className="p-6 space-y-4">
+                 <div className="p-3 bg-white border-2 border-black rounded-xl">
+                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Goal 1</p>
+                    <p className="font-black text-sm text-zinc-900">3 Hard DSA Problems</p>
+                 </div>
+                 <div className="p-3 bg-white border-2 border-black rounded-xl">
+                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Goal 2</p>
+                    <p className="font-black text-sm text-zinc-900">1 System Design Module</p>
+                 </div>
+                 <div className="p-3 bg-white border-2 border-black rounded-xl opacity-60">
+                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Goal 3</p>
+                    <p className="font-black text-sm text-zinc-900">30 Min Logical Reasoning</p>
+                 </div>
+                 <Button className="w-full bg-black text-white rounded-xl font-bold uppercase tracking-widest h-12 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.5)]">
+                   Execute Strategy
+                 </Button>
+               </CardContent>
+            </Card>
           </div>
 
           {/* Quick Actions */}

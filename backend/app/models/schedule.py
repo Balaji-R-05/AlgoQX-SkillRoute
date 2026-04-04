@@ -15,6 +15,7 @@ class StudySchedule(Base):
     start_date = Column(Date)
     end_date = Column(Date)
     daily_hours = Column(Integer)
+    event_type = Column(String, default="exam") # exam, interview, general
     schedule_json = Column(JSON) # Array of objects: { day: 1, title: "", tasks: [], status: "pending" }
     status = Column(String, default="active") # active, completed, archived
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -62,5 +63,18 @@ class ReadinessSnapshot(Base):
     stress_level = Column(String)               # "low", "moderate", "high", "critical"
     factors_json = Column(JSON)                 # breakdown: { quiz_avg, adherence_rate, streak, deadline_pressure, ... }
     recommendations_json = Column(JSON)         # array of { type, message, priority, action }
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class QuizAttempt(Base):
+    """Unified record for all types of quiz assessments."""
+    __tablename__ = "quiz_attempts"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, index=True)
+    quiz_type = Column(String) # "daily_checkin", "skill_assessment"
+    score = Column(Integer)
+    total = Column(Integer)
+    topics = Column(String) # Comma-separated or JSON string
+    date = Column(Date, server_default=func.current_date())
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

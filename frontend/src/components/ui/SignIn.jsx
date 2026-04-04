@@ -227,34 +227,23 @@ export const SignIn = () => {
               <Linkedin className="w-4 h-4 text-gray-400 group-hover:text-[#0077b5] transition-colors" />
             </a>
 
-            <a href="https://www.linkedin.com/in/dheebash-sai-ramesh-563b96320/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2 pr-3 bg-gray-50 dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-800 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all group">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xs">DS</div>
+            <a href="https://www.linkedin.com/in/balaji-ramu05/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2 pr-3 bg-gray-50 dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-800 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all group">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xs">BR</div>
               <div className="text-left flex-1 min-w-0">
-                <p className="text-xs font-bold text-gray-900 dark:text-gray-200 truncate">Dheebash Sai</p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium truncate">Full Stack Dev</p>
+                <p className="text-xs font-bold text-gray-900 dark:text-gray-200 truncate">Balaji Ramu</p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium truncate">Backend & Cloud</p>
               </div>
               <Linkedin className="w-4 h-4 text-gray-400 group-hover:text-[#0077b5] transition-colors" />
             </a>
 
-            <a href="https://www.linkedin.com/in/bala-saravanan-k/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2 pr-3 bg-gray-50 dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-800 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all group">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xs">BS</div>
+            <a href="https://www.linkedin.com/in/naga-vinay-0905nva1915/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2 pr-3 bg-gray-50 dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-800 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all group">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xs">NV</div>
               <div className="text-left flex-1 min-w-0">
-                <p className="text-xs font-bold text-gray-900 dark:text-gray-200 truncate">Bala Saravanan K</p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium truncate">Web Designer</p>
+                <p className="text-xs font-bold text-gray-900 dark:text-gray-200 truncate">Naga Vinay Avvaru</p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium truncate">AIML Engineer</p>
               </div>
               <Linkedin className="w-4 h-4 text-gray-400 group-hover:text-[#0077b5] transition-colors" />
             </a>
-
-            <a href="https://www.linkedin.com/in/thanushree-vijayakanth-a04a7631b/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2 pr-3 bg-gray-50 dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-800 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all group">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xs">TV</div>
-              <div className="text-left flex-1 min-w-0">
-                <p className="text-xs font-bold text-gray-900 dark:text-gray-200 truncate">Thanushree V</p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium truncate">Backend Dev</p>
-              </div>
-              <Linkedin className="w-4 h-4 text-gray-400 group-hover:text-[#0077b5] transition-colors" />
-            </a>
-
-
           </div>
         </div>
       </div>

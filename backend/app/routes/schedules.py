@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from app.database import get_db
 from app.utils.auth import verify_firebase_token
-from app.models.schedule import StudySchedule, DailyCheckin
+from app.models.schedule import StudySchedule, DailyCheckin, QuizAttempt
 from app.services.schedule_service import generate_study_plan, generate_daily_mcqs
 
 router = APIRouter(
@@ -31,11 +31,18 @@ class ScheduleSaveInput(BaseModel):
     start_date: date
     end_date: date
     daily_hours: int
+    event_type: str = "exam"
     schedule_json: List[dict]
 
 class CheckinSubmitInput(BaseModel):
     schedule_id: str
     answers: dict # { question_id: "A" }
+
+class TaskToggleInput(BaseModel):
+    schedule_id: str
+    day_number: int
+    task_index: int
+    is_completed: bool
 
 @router.post("/generate")
 async def api_generate_plan(
@@ -72,6 +79,7 @@ async def api_save_schedule(
         start_date=input_data.start_date,
         end_date=input_data.end_date,
         daily_hours=input_data.daily_hours,
+        event_type=input_data.event_type,
         schedule_json=input_data.schedule_json,
         status="active"
     )
@@ -120,9 +128,23 @@ async def api_get_all_active_schedules(
         "title": s.title,
         "start_date": s.start_date,
         "end_date": s.end_date,
-        "event_type": s.event_type if hasattr(s, 'event_type') else 'general',
+        "event_type": getattr(s, 'event_type', 'general'),
+        "daily_hours": s.daily_hours,
+        "overall_progress": round(calculate_total_progress(s.schedule_json), 1),
+        "days_remaining": (s.end_date - date.today()).days if s.end_date else 0,
         "schedule": s.schedule_json
     } for s in schedules]
+
+def calculate_total_progress(schedule_json):
+    if not schedule_json: return 0
+    total_tasks = 0
+    completed_tasks = 0
+    for day in schedule_json:
+        tasks = day.get("tasks", [])
+        total_tasks += len(tasks)
+        statuses = day.get("task_statuses", [])
+        completed_tasks += statuses.count("completed")
+    return (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
 
 @router.get("/today")
 async def api_get_today_tasks(
@@ -130,29 +152,62 @@ async def api_get_today_tasks(
     db: AsyncSession = Depends(get_db)
 ):
     # Aggregate today's tasks from all active schedules
-    query = select(StudySchedule).where(
-        and_(StudySchedule.user_id == user_id, StudySchedule.status == "active")
-    )
-    result = await db.execute(query)
-    schedules = result.scalars().all()
-    
-    today = date.today()
-    all_today_tasks = []
-    
-    for schedule in schedules:
-        passed_days = (today - schedule.start_date).days + 1
-        today_plan = next((d for d in schedule.schedule_json if d.get("day") == passed_days), None)
-        if today_plan:
-            all_today_tasks.append({
-                "schedule_id": schedule.id,
-                "schedule_title": schedule.title,
-                "event_type": schedule.event_type if hasattr(schedule, 'event_type') else 'general',
-                "topic": today_plan.get("topic", ""),
-                "tasks": today_plan.get("tasks", []),
-                "priority": today_plan.get("priority", "medium")
-            })
+    try:
+        from datetime import datetime
+        query = select(StudySchedule).where(
+            and_(StudySchedule.user_id == user_id, StudySchedule.status == "active")
+        )
+        result = await db.execute(query)
+        schedules = result.scalars().all()
+        
+        today = date.today()
+        all_today_tasks = []
+        
+        for schedule in schedules:
+            if not schedule.start_date:
+                continue
             
-    return {"today_tasks": all_today_tasks}
+            # Critical Fix: Normalize start_date to date to avoid TypeError during subtraction
+            start_date = schedule.start_date
+            if isinstance(start_date, datetime):
+                start_date = start_date.date()
+                
+            passed_days = (today - start_date).days + 1
+            
+            schedule_json = schedule.schedule_json
+            if not schedule_json:
+                continue
+                
+            # Handle potential string-serialized JSON
+            if isinstance(schedule_json, str):
+                import json
+                try:
+                    schedule_json = json.loads(schedule_json)
+                except:
+                    continue
+            
+            # Find the active day in the plan
+            today_plan = next((d for d in schedule_json if d.get("day") == passed_days), None)
+            if today_plan:
+                all_today_tasks.append({
+                    "schedule_id": schedule.id,
+                    "schedule_title": schedule.title,
+                    "event_type": getattr(schedule, 'event_type', 'general'),
+                    "topic": today_plan.get("topic", ""),
+                    "tasks": today_plan.get("tasks", []),
+                    "priority": today_plan.get("priority", "medium"),
+                    "day_number": passed_days,
+                    "task_statuses": today_plan.get("task_statuses", []),
+                    "daily_hours": schedule.daily_hours
+                })
+                
+        return {"today_tasks": all_today_tasks}
+    except Exception as e:
+        print(f"CRITICAL ERROR in api_get_today_tasks: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        # Return empty list instead of 500 to keep UI stable during debugging
+        return {"today_tasks": [], "error": str(e)}
 
 @router.get("/checkin/today")
 async def api_get_today_checkin(
@@ -186,10 +241,22 @@ async def api_get_today_checkin(
     # 3. If not, aggregate today's tasks from all active schedules
     aggregated_topics = []
     for s in schedules:
+        s_json = s.schedule_json
+        if not s_json: continue
+        
+        if isinstance(s_json, str):
+            import json
+            try:
+                s_json = json.loads(s_json)
+            except:
+                continue
+                
         passed_days = (today - s.start_date).days + 1
-        today_plan = next((d for d in s.schedule_json if d.get("day") == passed_days), None)
+        today_plan = next((d for d in s_json if d.get("day") == passed_days), None)
         if today_plan:
-            aggregated_topics.append(today_plan.get("topic", "") + " " + (", ".join(today_plan.get("tasks", []))))
+            topic = today_plan.get("topic", "")
+            tasks = today_plan.get("tasks", [])
+            aggregated_topics.append(f"{topic}: {', '.join(tasks) if isinstance(tasks, list) else tasks}")
     
     if not aggregated_topics:
         return {"status": "no_plan_for_today"}
@@ -296,6 +363,148 @@ async def api_complete_checkin(
 
     checkin.results_json = {"score": score, "total": len(questions), "breakdown": results}
     checkin.is_completed = 1
+    
+    # Also record in QuizAttempt for unified analytics
+    attempt = QuizAttempt(
+        user_id=user_id,
+        quiz_type="daily_checkin",
+        score=score,
+        total=len(questions),
+        topics="daily_review"
+    )
+    db.add(attempt)
     await db.commit()
     
     return {"status": "success", "score": score, "total": len(questions)}
+
+@router.patch("/tasks/toggle")
+async def api_toggle_task(
+    input_data: TaskToggleInput,
+    user_id: str = Depends(verify_firebase_token),
+    db: AsyncSession = Depends(get_db)
+):
+    # Use scalar() since we want the object directly
+    query = select(StudySchedule).where(
+        and_(StudySchedule.id == input_data.schedule_id, StudySchedule.user_id == user_id)
+    )
+    result = await db.execute(query)
+    schedule = result.scalars().first()
+    
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    
+    # Update schedule_json
+    # Note: JSON fields in SQLALchemy need to be updated carefully if they are mutable
+    schedule_data = list(schedule.schedule_json)
+    day_plan = next((d for d in schedule_data if d.get("day") == input_data.day_number), None)
+    
+    if not day_plan:
+        raise HTTPException(status_code=404, detail="Day not found in schedule")
+    
+    tasks = day_plan.get("tasks", [])
+    if input_data.task_index < 0 or input_data.task_index >= len(tasks):
+         raise HTTPException(status_code=400, detail="Invalid task index")
+    
+    # Initialize task_statuses if not exists
+    if "task_statuses" not in day_plan:
+        day_plan["task_statuses"] = ["pending"] * len(tasks)
+    
+    # Also handle legacy case where tasks might have changed size
+    if len(day_plan["task_statuses"]) != len(tasks):
+        new_statuses = ["pending"] * len(tasks)
+        for i in range(min(len(tasks), len(day_plan["task_statuses"]))):
+            new_statuses[i] = day_plan["task_statuses"][i]
+        day_plan["task_statuses"] = new_statuses
+
+    day_plan["task_statuses"][input_data.task_index] = "completed" if input_data.is_completed else "pending"
+    
+    # Update overall day status if all tasks are done
+    if all(s == "completed" for s in day_plan["task_statuses"]):
+        day_plan["status"] = "completed"
+    else:
+        day_plan["status"] = "pending"
+        
+    # Re-assign to trigger dirty check for JSON
+    schedule.schedule_json = schedule_data
+    await db.commit()
+    
+    return {
+        "status": "success", 
+        "day_status": day_plan["status"],
+        "task_statuses": day_plan["task_statuses"]
+    }
+@router.post("/relief")
+async def api_apply_stress_relief(
+    user_id: str = Depends(verify_firebase_token),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Experimental Stress-Aware Adaptive Planning:
+    Automatically defers all pending tasks for 'today' across all active schedules.
+    """
+    try:
+        from datetime import datetime
+        query = select(StudySchedule).where(
+            and_(StudySchedule.user_id == user_id, StudySchedule.status == "active")
+        )
+        result = await db.execute(query)
+        schedules = result.scalars().all()
+        
+        today = date.today()
+        modified_count = 0
+        deferred_tasks = []
+
+        for schedule in schedules:
+            if not schedule.start_date:
+                continue
+                
+            start_date = schedule.start_date
+            if isinstance(start_date, datetime):
+                start_date = start_date.date()
+                
+            passed_days = (today - start_date).days + 1
+            
+            # Mutable modification of JSON
+            schedule_data = list(schedule.schedule_json)
+            day_plan = next((d for d in schedule_data if d.get("day") == passed_days), None)
+            
+            if day_plan and day_plan.get("status") != "completed":
+                tasks = day_plan.get("tasks", [])
+                
+                # Initialize or update task_statuses
+                if "task_statuses" not in day_plan:
+                    day_plan["task_statuses"] = ["pending"] * len(tasks)
+                
+                # Mark all PENDING tasks as deferred
+                for i in range(len(day_plan["task_statuses"])):
+                    if day_plan["task_statuses"][i] == "pending":
+                        day_plan["task_statuses"][i] = "deferred"
+                        modified_count += 1
+                        deferred_tasks.append(tasks[i])
+                
+                # Update day status
+                day_plan["status"] = "deferred"
+                day_plan["stress_relief_applied"] = True
+                day_plan["original_tasks_count"] = len(tasks)
+                
+                # Re-assign to trigger dirty check
+                schedule.schedule_json = schedule_data
+                db.add(schedule)
+
+        if modified_count > 0:
+            await db.commit()
+            return {
+                "status": "success",
+                "message": f"Adaptive relief applied. {modified_count} tasks deferred for mental wellbeing.",
+                "deferred_tasks": deferred_tasks
+            }
+        else:
+            return {
+                "status": "no_action",
+                "message": "No pending tasks found for today. Keep resting!"
+            }
+
+    except Exception as e:
+        await db.rollback()
+        print(f"Error in api_apply_stress_relief: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

@@ -1,8 +1,17 @@
 import os
 import json
 from groq import Groq
+from dotenv import load_dotenv
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+load_dotenv()
+
+_client = None
+
+def get_client():
+    global _client
+    if _client is None:
+        _client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    return _client
 
 QUIZ_GENERATE_PROMPT = """
 You are SkillRoute QuizBot — an AI that generates skill assessment questions.
@@ -60,7 +69,7 @@ async def generate_quiz(skills: list) -> dict:
 
     while retry_count < max_retries:
         try:
-            response = client.chat.completions.create(
+            response = get_client().chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
                     {"role": "system", "content": QUIZ_GENERATE_PROMPT},

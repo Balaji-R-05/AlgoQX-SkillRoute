@@ -35,7 +35,7 @@ const TYPE_CONFIG = {
   }
 };
 
-const AdaptiveRecommendations = ({ recommendations = [], loading = false }) => {
+const AdaptiveRecommendations = ({ recommendations = [], loading = false, onReliefClick }) => {
   if (loading) {
     return (
       <Card className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden animate-pulse">
@@ -117,7 +117,7 @@ const AdaptiveRecommendations = ({ recommendations = [], loading = false }) => {
                         {rec.message}
                       </p>
                       
-                      {rec.action_link && (
+                      {rec.action_link ? (
                         <div className="mt-3">
                           <Link 
                             to={rec.action_link} 
@@ -126,7 +126,17 @@ const AdaptiveRecommendations = ({ recommendations = [], loading = false }) => {
                             Take Action <ArrowRight className="w-4 h-4" />
                           </Link>
                         </div>
-                      )}
+                      ) : rec.action_type === 'relief' ? (
+                        <div className="mt-3">
+                          <button 
+                            onClick={onReliefClick}
+                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all ${config.bg} ${config.color}`}
+                          >
+                            <HeartPulse className="w-4 h-4" />
+                            Apply Relief
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 </motion.div>

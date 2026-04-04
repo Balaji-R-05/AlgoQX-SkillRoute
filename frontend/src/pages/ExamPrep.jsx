@@ -18,6 +18,7 @@ export default function ExamPrep() {
   const navigate = useNavigate();
   const [schedules, setSchedules] = useState([]);
   const [readiness, setReadiness] = useState(null);
+  const [masteryData, setMasteryData] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,9 +30,10 @@ export default function ExamPrep() {
       const token = await user.getIdToken();
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [schedRes, readRes] = await Promise.allSettled([
+      const [schedRes, readRes, masteryRes] = await Promise.allSettled([
         axios.get(`${API}/api/schedules/active/all`, { headers }),
         axios.get(`${API}/api/wellness/today`, { headers }),
+        axios.get(`${API}/api/quiz/mastery`, { headers }),
       ]);
 
       if (schedRes.status === 'fulfilled') {
@@ -42,6 +44,9 @@ export default function ExamPrep() {
       if (readRes.status === 'fulfilled') {
         setReadiness(readRes.value.data?.readiness || readRes.value.data);
       }
+      if (masteryRes.status === 'fulfilled') {
+        setMasteryData(masteryRes.value.data || {});
+      }
     } catch (e) {
       console.error('Failed to load exam prep data', e);
     } finally {
@@ -49,12 +54,17 @@ export default function ExamPrep() {
     }
   };
 
-  const examSubjects = [
-    { name: 'Data Structures', readiness: 72, status: 'on-track', weakTopics: ['AVL Trees', 'Graph Algorithms'] },
-    { name: 'Operating Systems', readiness: 45, status: 'needs-attention', weakTopics: ['Deadlocks', 'Virtual Memory'] },
-    { name: 'Database Systems', readiness: 85, status: 'strong', weakTopics: [] },
-    { name: 'Computer Networks', readiness: 58, status: 'moderate', weakTopics: ['TCP/IP', 'Subnetting'] },
-  ];
+  const examSubjects = Object.entries(masteryData).length > 0
+    ? Object.entries(masteryData).map(([name, data]) => {
+        const readiness = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
+        return {
+          name,
+          readiness,
+          status: readiness >= 80 ? 'strong' : readiness >= 70 ? 'on-track' : readiness >= 50 ? 'moderate' : 'needs-attention',
+          weakTopics: readiness < 60 ? ['Topic focus required'] : []
+        };
+      })
+    : [];
 
   const getStatusColor = (status) => ({
     'strong': 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/30',
@@ -107,64 +117,62 @@ export default function ExamPrep() {
             </Button>
           </div>
 
-          {/* Subject Readiness Cards */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Subject Readiness</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {examSubjects.map((subj, i) => (
-                <motion.div
-                  key={subj.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                >
-                  <Card className="border-0 shadow-md dark:bg-zinc-900/80 hover:shadow-lg transition-shadow">
-                    <CardContent className="pt-5">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">{subj.name}</h3>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(subj.status)}`}>
-                          {subj.status.replace('-', ' ')}
-                        </span>
-                      </div>
-
-                      {/* Progress bar */}
-                      <div className="w-full h-2 bg-gray-100 dark:bg-zinc-800 rounded-full mb-3">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${subj.readiness}%` }}
-                          transition={{ delay: i * 0.1 + 0.3, duration: 0.8 }}
-                          className={`h-full rounded-full ${
-                            subj.readiness >= 80 ? 'bg-emerald-500' :
-                            subj.readiness >= 60 ? 'bg-blue-500' :
-                            subj.readiness >= 40 ? 'bg-amber-500' : 'bg-red-500'
-                          }`}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{subj.readiness}% ready</span>
-                        {subj.weakTopics.length > 0 && (
-                          <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                            <AlertTriangle className="h-3 w-3" />
-                            {subj.weakTopics.length} weak topic{subj.weakTopics.length > 1 ? 's' : ''}
-                          </div>
-                        )}
-                      </div>
-
-                      {subj.weakTopics.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {subj.weakTopics.map(t => (
-                            <span key={t} className="px-2 py-0.5 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-xs rounded-full">
-                              {t}
-                            </span>
-                          ))}
+            {examSubjects.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {examSubjects.map((subj, i) => (
+                  <motion.div
+                    key={subj.name}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                  >
+                    <Card className="border-0 shadow-md dark:bg-zinc-900/80 hover:shadow-lg transition-shadow">
+                      <CardContent className="pt-5">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-semibold text-gray-900 dark:text-white">{subj.name}</h3>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(subj.status)}`}>
+                            {subj.status.replace('-', ' ')}
+                          </span>
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
+
+                        {/* Progress bar */}
+                        <div className="w-full h-2 bg-gray-100 dark:bg-zinc-800 rounded-full mb-3">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${subj.readiness}%` }}
+                            transition={{ delay: i * 0.1 + 0.3, duration: 0.8 }}
+                            className={`h-full rounded-full ${
+                              subj.readiness >= 80 ? 'bg-emerald-500' :
+                              subj.readiness >= 60 ? 'bg-blue-500' :
+                              subj.readiness >= 40 ? 'bg-amber-500' : 'bg-red-500'
+                            }`}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">{subj.readiness}% ready</span>
+                          {subj.weakTopics.length > 0 && (
+                            <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                              <AlertTriangle className="h-3 w-3" />
+                              {subj.weakTopics.length} weak area
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <Card className="border-0 shadow-md dark:bg-zinc-900/80">
+                <CardContent className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <BookOpen className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                  <p>No quiz data available yet. Take a quiz to see your subject readiness!</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Active Exam Schedules */}

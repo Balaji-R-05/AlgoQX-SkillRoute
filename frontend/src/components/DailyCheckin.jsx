@@ -190,7 +190,7 @@ export default function DailyCheckin() {
               <div className="space-y-2 pt-2">
                 <p className="text-xs font-bold uppercase tracking-wider text-indigo-400 dark:text-indigo-500">Suggested Focus</p>
                 <div className="bg-white/60 dark:bg-zinc-900/50 p-4 rounded-2xl text-sm font-semibold text-indigo-900 dark:text-indigo-100 backdrop-blur-sm border border-indigo-100 dark:border-indigo-900/30">
-                  {readinessData.recommendations[0]}
+                  {readinessData.recommendations[0]?.message || "Keep up your consistent work!"}
                 </div>
               </div>
             )}

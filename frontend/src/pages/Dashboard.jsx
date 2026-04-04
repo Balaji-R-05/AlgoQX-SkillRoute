@@ -15,9 +15,15 @@ import SkillQuiz from '../components/SkillQuiz'
 import LearningOutcomes from '../components/LearningOutcomes'
 import JobListings from '../components/JobListings'
 import DailyCheckin from '../components/DailyCheckin'
+import TodayTasks from '../components/TodayTasks'
 import { useDashboardData } from '../hooks/useDashboardData.jsx'
 import { Skeleton } from '../components/ui/skeleton'
 import { motion, AnimatePresence } from 'framer-motion'
+import StressBuster from '../components/StressBuster'
+import { CheckCircle2, Zap, Target, ShieldCheck, Activity } from 'lucide-react'
+import ActivePlans from '../components/ActivePlans'
+import axios from 'axios'
+import { useAuth } from '../contexts/AuthContext'
 
 const Dashboard = () => {
   const {
@@ -36,7 +42,29 @@ const Dashboard = () => {
   const [showConfirmReset, setShowConfirmReset] = useState(false)
   const [showConfirmAdapt, setShowConfirmAdapt] = useState(false)
   const [showQuiz, setShowQuiz] = useState(false)
+  const [showStressBuster, setShowStressBuster] = useState(false)
+  const [readinessScore, setReadinessScore] = useState(null)
   const navigate = useNavigate()
+  const { idToken } = useAuth()
+
+  // Fetch Readiness Score
+  useEffect(() => {
+    const fetchReadiness = async () => {
+      if (!idToken) return;
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/wellness/today`, {
+          headers: { Authorization: `Bearer ${idToken}` }
+        });
+        // Readiness = 10 - Stress
+        if (res.data?.stress_level !== undefined) {
+          setReadinessScore(10 - res.data.stress_level);
+        }
+      } catch (err) {
+        console.error("Failed to fetch readiness:", err);
+      }
+    };
+    fetchReadiness();
+  }, [idToken]);
 
   // Listen for the custom event from the hook to trigger adapt modal
   useEffect(() => {
@@ -103,9 +131,23 @@ const Dashboard = () => {
                   </p>
                 </div>
 
-                <div className="flex flex-col gap-3 min-w-[200px]">
-                   <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">
-                      <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Current Streak</div>
+                <div className="flex flex-col sm:flex-row gap-4 min-w-[200px]">
+                  {/* Readiness Snapshot */}
+                  <div className="p-4 bg-indigo-600 dark:bg-indigo-500 rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-white">
+                      <div className="text-[10px] font-black uppercase tracking-widest mb-1 opacity-80">Readiness Pulse</div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex flex-col">
+                          <span className="text-3xl font-black">{readinessScore ?? '--'}<span className="text-sm opacity-60">/10</span></span>
+                          <span className="text-[10px] font-bold uppercase">{readinessScore > 7 ? 'Optimum' : readinessScore > 4 ? 'Steady' : readinessScore ? 'Recharge' : 'Pending'}</span>
+                        </div>
+                        <div className="size-10 rounded-full border-2 border-black bg-white/20 flex items-center justify-center">
+                          <Activity className="size-5" />
+                        </div>
+                      </div>
+                  </div>
+
+                   <div className="p-4 bg-white dark:bg-zinc-800 rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-none">
+                      <div className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1">Current Streak</div>
                       <div className="text-3xl font-black text-zinc-900 dark:text-white flex items-center gap-2">
                         {roadmap?.progress?.streak || 0} <span className="text-orange-500 text-2xl">🔥</span>
                       </div>
@@ -114,13 +156,64 @@ const Dashboard = () => {
               </div>
             </motion.div>
 
+            {/* Quick Actions Integration */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              <button 
+                onClick={() => navigate('/mock-interview')}
+                className="p-4 bg-[#fef08a] hover:bg-[#fde047] border-2 border-black rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-transform hover:-translate-y-1 active:translate-y-0 group text-left"
+              >
+                <div className="size-10 bg-white border-2 border-black rounded-xl mb-3 flex items-center justify-center group-hover:rotate-6 transition-transform">
+                  <Target className="size-5 text-zinc-900" />
+                </div>
+                <h3 className="font-black text-sm uppercase tracking-tight text-zinc-900">Mock Interview</h3>
+                <p className="text-[10px] font-bold text-zinc-700 mt-1">AI-Powered Sessions</p>
+              </button>
+
+              <button 
+                onClick={() => navigate('/placement-prep')}
+                className="p-4 bg-[#bae6fd] hover:bg-[#7dd3fc] border-2 border-black rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-transform hover:-translate-y-1 active:translate-y-0 group text-left"
+              >
+                <div className="size-10 bg-white border-2 border-black rounded-xl mb-3 flex items-center justify-center group-hover:-rotate-3 transition-transform">
+                  <ShieldCheck className="size-5 text-zinc-900" />
+                </div>
+                <h3 className="font-black text-sm uppercase tracking-tight text-zinc-900">Prep Strategy</h3>
+                <p className="text-[10px] font-bold text-zinc-700 mt-1">Personalized Roadmaps</p>
+              </button>
+
+              <button 
+                onClick={() => setShowStressBuster(true)}
+                className="p-4 bg-[#fed7aa] hover:bg-[#fdba74] border-2 border-black rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-transform hover:-translate-y-1 active:translate-y-0 group text-left"
+              >
+                <div className="size-10 bg-white border-2 border-black rounded-xl mb-3 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Zap className="size-5 text-zinc-900" />
+                </div>
+                <h3 className="font-black text-sm uppercase tracking-tight text-zinc-900">Stress Relief</h3>
+                <p className="text-[10px] font-bold text-zinc-700 mt-1">Guided Reset</p>
+              </button>
+
+              <button 
+                onClick={() => navigate('/teacher')}
+                className="p-4 bg-[#ddd6fe] hover:bg-[#c4b5fd] border-2 border-black rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-transform hover:-translate-y-1 active:translate-y-0 group text-left"
+              >
+                <div className="size-10 bg-white border-2 border-black rounded-xl mb-3 flex items-center justify-center group-hover:rotate-12 transition-transform">
+                  <Brain className="size-5 text-zinc-900" />
+                </div>
+                <h3 className="font-black text-sm uppercase tracking-tight text-zinc-900">Focus Mode</h3>
+                <p className="text-[10px] font-bold text-zinc-700 mt-1">Study Guard AI</p>
+              </button>
+            </div>
+
             {roadmap?.career_decision && (
               <CareerMatchCard careerDecision={roadmap.career_decision} />
             )}
 
-            {/* Daily Check-in Component */}
+            {/* Active Study Plans - Master Planner */}
+            <ActivePlans />
+
+            {/* Daily Tasks & Check-in Section */}
             {roadmap && (
-              <div className="mt-8">
+              <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                <TodayTasks />
                 <DailyCheckin />
               </div>
             )}
@@ -317,6 +410,18 @@ const Dashboard = () => {
         onClose={() => setShowQuiz(false)}
         skills={profile?.skills || []}
       />
+
+      <AnimatePresence>
+        {showStressBuster && (
+          <StressBuster 
+            onClose={() => setShowStressBuster(false)} 
+            onReliefApplied={() => {
+              setShowStressBuster(false);
+              refreshData();
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

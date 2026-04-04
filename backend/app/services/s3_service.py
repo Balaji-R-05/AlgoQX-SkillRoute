@@ -1,6 +1,7 @@
 import os
 import boto3
 from botocore.exceptions import ClientError
+from botocore.client import Config
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,7 +13,8 @@ class S3Service:
             's3',
             aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
             aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
-            region_name=os.getenv('AWS_S3_REGION_NAME', 'ap-southeast-1')
+            region_name=os.getenv('AWS_S3_REGION_NAME', 'ap-southeast-1'),
+            config=Config(signature_version='s3v4')
         )
 
     async def upload_file(self, file_content: bytes, file_name: str, content_type: str = 'application/pdf') -> str:
@@ -40,11 +42,24 @@ class S3Service:
     def generate_presigned_url(self, file_name: str, expiration=3600) -> str:
         """
         Generates a presigned URL to share an S3 object.
+        Forces inline viewing and tries to guess the correct content type.
         """
+        import mimetypes
+        content_type, _ = mimetypes.guess_type(file_name)
+        
+        params = {
+            'Bucket': self.bucket_name,
+            'Key': file_name,
+            'ResponseContentDisposition': 'inline'
+        }
+        
+        if content_type:
+            params['ResponseContentType'] = content_type
+            
         try:
             response = self.s3_client.generate_presigned_url(
                 'get_object',
-                Params={'Bucket': self.bucket_name, 'Key': file_name},
+                Params=params,
                 ExpiresIn=expiration
             )
         except ClientError as e:

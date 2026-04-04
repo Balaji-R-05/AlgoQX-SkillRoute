@@ -90,21 +90,68 @@ export default function TeachingPanel({ resource, onClose }) {
     }
   };
 
+  const renderDocument = () => {
+    if (!resource?.url) return <div className="text-white">No URL available</div>;
+    
+    // Guess type if resource_type isn't specific enough
+    const rType = (resource.resource_type || resource.type || '').toUpperCase();
+    const urlLower = resource.url.toLowerCase();
+    
+    const isPDF = rType === 'PDF' || urlLower.includes('.pdf');
+    const isImage = urlLower.match(/\.(jpeg|jpg|gif|png|webp)/i);
+    const isVideo = rType === 'VIDEO' || urlLower.match(/\.(mp4|webm|ogg)/i);
+
+    if (isPDF) {
+      return <iframe src={`${resource.url}#toolbar=0`} className="w-full h-full rounded-xl border-0 bg-white shadow-inner" title={resource.title || 'Document'} />;
+    } else if (isImage) {
+      return <img src={resource.url} alt={resource.title} className="max-w-full max-h-full object-contain shadow-2xl rounded-xl" />;
+    } else if (isVideo) {
+      return <video controls src={resource.url} className="w-full max-h-full rounded-xl shadow-2xl" />;
+    } else {
+      // Fallback for general web links or unknown
+      return (
+        <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-zinc-900/50 rounded-xl">
+           <BookOpen className="w-16 h-16 text-zinc-500 mb-4" />
+           <p className="text-white text-lg font-medium mb-2">Unsupported Document Preview</p>
+           <a href={resource.url} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 underline">
+             Open {resource.title || "Link"} in new tab
+           </a>
+        </div>
+      );
+    }
+  };
+
   return (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex justify-end"
+        className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex flex-row"
         onClick={onClose}
       >
+        {/* Document Viewer (Left Side) */}
+        <div className="flex-1 h-full p-4 md:p-6 lg:p-8 flex flex-col justify-center relative items-center" onClick={e => e.stopPropagation()}>
+           <div className="w-full h-full relative flex flex-col">
+              <div className="flex justify-between items-center mb-4">
+                 <h2 className="text-white font-bold text-xl truncate">{resource?.title || 'Document Preview'}</h2>
+                 <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full" onClick={onClose}>
+                    <X className="h-5 w-5 mr-2" /> Close Tutor
+                 </Button>
+              </div>
+              <div className="flex-1 w-full bg-black/40 rounded-2xl overflow-hidden shadow-2xl border border-white/10 flex items-center justify-center p-2">
+                 {renderDocument()}
+              </div>
+           </div>
+        </div>
+
+        {/* AI Tutor Panel (Right Side) */}
         <motion.div
           initial={{ x: '100%' }}
           animate={{ x: 0 }}
           exit={{ x: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="w-full max-w-lg h-full bg-white dark:bg-zinc-900 shadow-2xl overflow-y-auto"
+          className="w-full md:w-[450px] lg:w-[500px] flex-shrink-0 h-full bg-white dark:bg-zinc-900 shadow-2xl overflow-y-auto"
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}

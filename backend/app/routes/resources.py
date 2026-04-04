@@ -73,7 +73,13 @@ async def list_resources(
                 # The key is after the third slash and the domain
                 # e.g. https://bucket.s3.region.amazonaws.com/uploads/user/file.pdf
                 # Splitting by '.amazonaws.com/' gets the key
-                key = res.url.split(".amazonaws.com/")[-1]
+                import urllib.parse
+                raw_key = res.url.split(".amazonaws.com/")[-1]
+                # Strip query parameters (if URL in DB is a presigned URL somehow)
+                raw_key = raw_key.split("?")[0]
+                # Unquote to get actual S3 key (e.g. from %20 to space)
+                key = urllib.parse.unquote(raw_key)
+
                 presigned_url = s3_service.generate_presigned_url(key)
                 if presigned_url:
                     res_data["url"] = presigned_url
@@ -114,7 +120,7 @@ async def sync_resources(
 
     new_count = 0
     bucket_name = s3_service.bucket_name
-    region = os.getenv('AWS_S3_REGION_NAME', 'ap-southeast-1')
+    region = os.getenv('AWS_S3_REGION_NAME', 'ap-south-1')
 
     for key in s3_keys:
         # Construct the full S3 URL
