@@ -3,6 +3,7 @@
 .env.local
 .env.development
 .env.production
+config.yml
 
 # Virtual environment
 venv/
