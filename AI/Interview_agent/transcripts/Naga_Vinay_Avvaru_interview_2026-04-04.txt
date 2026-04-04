@@ -1,0 +1,111 @@
+======================================================================
+AI INTERVIEW TRANSCRIPT
+======================================================================
+
+Candidate     : Naga Vinay Avvaru
+Date / Time   : 2026-04-04 18:46:46
+Questions     : 7
+Strikes       : 5
+End Reason    : max_strikes_reached
+Final Score   : 24 / 100
+
+----------------------------------------------------------------------
+QUESTION & ANSWER LOG
+----------------------------------------------------------------------
+
+Q1 [HARD] (Topic: MLOps and LLMOps, Computer Vision, LLMs and Agentic AI)
+  Question : Design a scalable and secure system to integrate a large language model (LLM) with a real-time Computer Vision pipeline, where the LLM is used to generate human-readable descriptions of objects detected by the Computer Vision model. The system should be able to handle a high volume of concurrent requests and be deployable on a cloud platform like Google Cloud Run. Additionally, ensure that the system is resistant to adversarial attacks and can detect potential security threats.
+  Answer   : idk
+  ** STRIKE **
+
+Q2 [HARD] (Topic: Machine Learning)
+  Question : Design a secure and scalable framework for deploying and managing a real-time object detection model using YOLOv8 and LangChain, which can be integrated with a cloud-based backend (e.g., Google Cloud Run) and a web-based interface (e.g., Streamlit). Ensure the framework provides robustness against adversarial attacks and supports model updates without downtime.
+  Answer   : idk
+  ** STRIKE **
+
+Q3 [HARD] (Topic: MLOps and LLMOps)
+  Question : Design a secure and reliable pipeline for deploying and managing a large-scale, multi-modal deep learning model on Google Cloud Run that integrates with a Supabase database, utilizing FastAPI for API endpoints and Streamlit for model serving, while ensuring alignment with the company's security and reliability standards.
+  Answer   : idk
+  ** STRIKE **
+
+Q4 [HARD] (Topic: Security and Reliability)
+  Question : Design a system to detect and prevent prompt injection attacks in a large-scale, production-grade LLM-based chatbot deployed on Google Cloud Run, while ensuring minimal latency and maximum security.
+  Answer   : Threat model
+Prompt injection happens when user input or external content changes model behavior in unintended ways, and OWASP notes that both direct injections from user text and indirect injections from webpages, files, or retrieved documents are realistic risks. The main business impacts are leakage of system prompts or secrets, manipulated responses, unauthorized tool use, and harmful downstream actions, so the design must assume prevention is imperfect and focus on containment as much as detection.
+​
+
+Core architecture
+A production-grade design should use a staged pipeline: client → API gateway/load balancer → Cloud Run app → prompt-injection firewall → retrieval/tool policy engine → LLM runtime → output validator → response broker. This structure keeps security decisions in code and policy services rather than inside the model prompt, which aligns with OWASP’s guidance to constrain behavior, validate outputs, segregate untrusted content, and keep privileged functions outside the model.
+
+Fast defense layers
+For minimal latency, put cheap deterministic checks first: normalize input, cap length, detect encoded or obfuscated payloads, scan for phrases such as “ignore previous instructions,” tool escalation attempts, prompt extraction attempts, and suspicious formatting patterns, then assign a risk score. Only send medium-risk traffic to a secondary lightweight classifier or policy model, while high-risk traffic is blocked or downgraded to a safe fallback response, which keeps most benign requests on the fast path.
+
+Prompt isolation
+Never concatenate raw user text directly into a single free-form prompt with instructions, memory, and retrieved content mixed together. Instead, separate system instructions, user query, conversation state, and untrusted external content with explicit boundaries and labels, and tell the model that retrieved documents and user text are untrusted data, not authority-bearing instructions.
+​
+
+Retrieval safety
+RAG does not fully solve prompt injection, and OWASP explicitly says prompt injection remains possible even with retrieval and fine-tuning. So every retrieved chunk should carry trust metadata, source type, document owner, sensitivity label, and a sanitizer result; high-risk chunks can be summarized by a separate low-privilege model or stripped of imperative language before being passed onward.
+​
+
+Tool-use controls
+The model should never directly receive broad credentials or unrestricted tool access, because OWASP recommends least privilege and handling functions in code instead of delegating trust to the model. Use a policy engine that maps intents to allowlisted actions, requires typed arguments, enforces per-tool scopes, rate limits, and approval gates for risky operations like email send, CRM update, payment action, or file export.
+​
+  Score    : 8/10
+  Feedback : The candidate demonstrates a thorough understanding of the threat model and provides a well-structured design for preventing prompt injection attacks. However, some minor improvements can be made to address latency and scalability concerns.
+
+Q5 [MEDIUM] (Topic: Deep Learning)
+  Question : Design a system to monitor and mitigate the risk of model drift in a cloud-based deployment of a deep learning model used for object detection in a surveillance application. Consider the trade-offs between accuracy, latency, and resource utilization.
+  Answer   : A production system for monitoring and mitigating model drift in a cloud‑based object‑detection surveillance model should use continuous observability, automated drift‑detection triggers, and controlled retraining, while balancing accuracy, latency, and compute cost.
+
+Architecture overview
+The pipeline runs on a managed cloud platform (for example, GCP Vertex AI or AWS SageMaker) and follows: live camera stream → edge preprocessing → inference service → observability layer → drift engine → retraining orchestrator. Inference is served via a scalable compute‑optimized instance (GPU/TPU) for low latency, while monitoring and drift detection run on cheaper CPU‑only workers. This split keeps the critical path fast while off‑loading heavy analytics.
+
+Drift detection
+Drift is detected at two levels: data‑level and performance‑level. Data‑level monitors track feature distributions (e.g., image brightness, motion patterns, object‑size histograms) using distance metrics such as K‑S test or JS divergence against a training‑time baseline; significant divergence triggers a warning. Performance‑level monitoring computes per‑camera metrics (precision, recall, false‑positive rate, average confidence) over sliding windows; drops beyond a threshold indicate concept drift. For real‑time surveillance, Page‑Hinkley‑style change‑point methods on confidence scores can detect decays with low latency.
+
+Latency‑accuracy trade‑offs
+To keep inference latency under tens of milliseconds, the system uses lightweight monitors that sample only a fraction of frames or aggregated per‑camera statistics instead of per‑frame analysis. Full‑scale drift analysis runs asynchronously on batched logs, so heavy statistical tests and shadow‑model comparisons do not slow down the live stream. This preserves accuracy of detection by allowing rich offline analysis, while keeping the online service responsive for security‑critical use cases.
+
+Resource‑efficient mitigation
+When drift is suspected, the system first validates using a small shadow deployment of a candidate model on the new data, comparing its metrics before promotion. If the drift is confirmed, active learning selects uncertain or misclassified frames, triggering targeted labelling and incremental retraining instead of full‑scale retraining, which reduces cloud‑compute cost and turnaround time. During retraining, the system can fall back to a previous stable model or a simpler, more robust detector (e.g., smaller YOLO) to maintain baseline accuracy while the main model updates.
+  Score    : 8/10
+  Feedback : The candidate provides a comprehensive and well-structured answer, covering the key aspects of model drift monitoring and mitigation. However, some minor details and edge cases could be explored further.
+
+Q6 [MEDIUM] (Topic: Cloud and Backend)
+  Question : Design a scalable and secure architecture for a real-time object detection system using YOLOv8 and LangChain, deployed on Google Cloud Run, that can handle a minimum of 1000 concurrent requests per second, and explain how you would optimize the model for better performance.
+  Answer   : idk
+  ** STRIKE **
+
+Q7 [MEDIUM] (Topic: MLOps and LLMOps)
+  Question : Design a data pipeline to integrate a large-scale dataset from a Google Cloud Storage bucket into a Streamlit application, utilizing MLflow for model tracking and Optuna for hyperparameter tuning. Ensure the data is properly validated, transformed, and stored in a suitable format for the application.
+  Answer   : idk
+  ** STRIKE **
+
+----------------------------------------------------------------------
+FINAL REPORT
+----------------------------------------------------------------------
+
+Score   : 24 / 100
+Summary : The candidate struggled with most of the questions, demonstrating a lack of understanding of the topics and concepts. However, in question 4, they showed a good grasp of the threat model and provided a well-structured design for preventing prompt injection attacks. In questions 5, they provided a comprehensive and well-structured answer, covering the key aspects of model drift monitoring and mitigation. Unfortunately, their lack of preparation and understanding of the topics led to a disappointing overall performance.
+
+Strengths:
+  • Demonstrated a good understanding of the threat model and provided a well-structured design for preventing prompt injection attacks in question 4.
+  • Provided a comprehensive and well-structured answer in question 5, covering the key aspects of model drift monitoring and mitigation.
+
+Improvement Suggestions:
+  • Improve preparation and understanding of MLOps, LLMOps, and related topics.
+  • Develop a stronger grasp of Computer Vision and Deep Learning concepts.
+  • Practice answering questions on Cloud and Backend, Security and Reliability, and other relevant topics.
+
+Topic Breakdown:
+  - {'topic': 'MLOps and LLMOps', 'score': 0, 'notes': 'Struggled with all questions related to MLOps and LLMOps, demonstrating a lack of understanding of the topics and concepts.'}
+  - {'topic': 'Machine Learning', 'score': 0, 'notes': 'Struggled with all questions related to Machine Learning, demonstrating a lack of understanding of the topics and concepts.'}
+  - {'topic': 'Security and Reliability', 'score': 8, 'notes': 'Demonstrated a good understanding of the threat model and provided a well-structured design for preventing prompt injection attacks in question 4.'}
+  - {'topic': 'Deep Learning', 'score': 8, 'notes': 'Provided a comprehensive and well-structured answer in question 5, covering the key aspects of model drift monitoring and mitigation.'}
+  - {'topic': 'Cloud and Backend', 'score': 0, 'notes': 'Struggled with all questions related to Cloud and Backend, demonstrating a lack of understanding of the topics and concepts.'}
+  - {'topic': 'Data Pipeline', 'score': 0, 'notes': 'Struggled with all questions related to Data Pipeline, demonstrating a lack of understanding of the topics and concepts.'}
+
+======================================================================
+END OF TRANSCRIPT
+======================================================================

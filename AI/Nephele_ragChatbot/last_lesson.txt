@@ -1,0 +1,29 @@
+Lesson Title: Understanding Instruction Prompting in Language Models
+
+Introduction:
+Welcome to today's lesson on instruction prompting in language models. Instruction prompting is a method used to improve the understanding of user intentions by providing task instructions to the model. Let's dive into the key concepts step by step.
+
+1. What is Instruction Prompting?
+   - Instruction prompting involves describing task instructions to a model in the form of demonstrations to guide its behavior.
+   - The goal is to make the language model better understand user intentions and follow instructions effectively.
+
+2. Why Instruction Prompting?
+   - Few-shot learning can be expensive and restrict input length, making direct instruction a more efficient approach.
+   - Instructed LM, such as InstructGPT, uses high-quality tuples of (instruction, input, output) to improve model understanding.
+   - RLHF (Reinforcement Learning from Human Feedback) is a common method used for instruction following fine-tuning.
+
+3. Best Practices in Instruction Prompting:
+   - Describe task requirements in detail, be specific, and avoid negative instructions.
+   - Use examples and analogies to convey instructions effectively.
+   - Consider the audience and context when providing instructions.
+
+4. In-Context Instruction Learning:
+   - In-context instruction learning combines few-shot learning with instruction prompting.
+   - It involves multiple demonstration examples across different tasks in the prompt, including instruction, input, and output.
+
+5. Automatic Prompt Design:
+   - AutoPrompt, Prefix-Tuning, P-tuning, and Prompt-Tuning are methods for optimizing prompt sequences to improve model performance.
+   - APE (Automatic Prompt Engineer) filters model-generated instruction candidates based on a chosen score function to select the best candidate.
+
+Conclusion:
+Instruction prompting is a valuable technique for enhancing communication with language models and improving their alignment with human intention. By providing clear and detailed instructions, we can effectively guide the behavior of these models and achieve desired outcomes. Thank you for joining this lesson on instruction prompting in language models.
