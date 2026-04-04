@@ -1,0 +1,7 @@
+python-telegram-bot==20.*
+boto3
+sentence-transformers
+torch
+psycopg2-binary
+pgvector
+pyyaml
