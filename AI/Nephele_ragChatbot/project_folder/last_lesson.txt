@@ -1,0 +1,50 @@
+# Lesson: Understanding Variables and Data Types in Python
+
+**Teacher's Note:** *This lesson is designed for voice narration. The tone is encouraging, clear, and paced for a beginner. Each section flows logically into the next to build a foundational understanding of how Python handles data.*
+
+---
+
+### Section 1: Introduction to Variables
+**(Tone: Welcoming and engaging)**
+
+Welcome! Today, we are going to dive into one of the most fundamental concepts in programming: **Variables and Data Types.**
+
+Before we look at the code, let's start with an analogy. Imagine you are moving into a new house and you have a lot of cardboard boxes. To keep track of what’s inside, you put a label on the outside of each box. One might say "Kitchen Supplies," and another might say "Books." 
+
+In Python, a **variable** is exactly like that label. It is a name that refers to a piece of information stored in your computer's memory. Instead of remembering a complex memory address, you just give your data a name—like `name` or `age`—and you can call upon it whenever you need it.
+
+One of the coolest things about Python is that it is flexible. Unlike some other languages, Python lets you store values in variables without having to declare the "type" of data in advance. You simply assign a value to a name, and Python figures out the rest.
+
+---
+
+### Section 2: The Basic Data Types (The "Singles")
+**(Tone: Instructional and clear)**
+
+Now that we know variables are like labeled boxes, we need to talk about *what* we are actually putting inside those boxes. We call these **Data Types**. 
+
+Let's look at the most common types you'll use as a beginner. Imagine we are creating a profile for a student named Vinay.
+
+First, we have **Strings**. These are used for text. In Python, strings are always wrapped in quotation marks. 
+*   *Example:* `name = "Vinay"`
+
+Next, we have **Integers**. These are whole numbers without any decimals. We use these for things like counting or age.
+*   *Example:* `age = 20`
+
+Then, we have **Floating-Point numbers**, or "Floats" for short. These are numbers that contain a decimal point. These are perfect for precise measurements.
+*   *Example:* `height = 5.9`
+
+Finally, we have **Booleans**. A boolean is the simplest data type of all because it can only be one of two values: `True` or `False`. These are used for logic and decision-making.
+*   *Example:* `is_student = True`
+
+So, in just four lines of code, we’ve captured a name, an age, a height, and a status. Each one is a different data type, but Python handles them all seamlessly.
+
+---
+
+### Section 3: Collection Data Types (The "Groups")
+**(Tone: Expanding and illustrative)**
+
+Sometimes, a single value isn't enough. Sometimes we need to group multiple pieces of information together. This is where **Collections** come in. The two most important ones for beginners are **Lists** and **Dictionaries**.
+
+Think of a **List** as a digital shopping list. It is an ordered collection of items. You can store multiple strings, numbers, or a mix of both, all inside one variable.
+*   *Example:* `fruits = ["apple", "banana", "mango"]`
+If you want the first item on that

@@ -1,0 +1,84 @@
+C e r t i f i c a t e s : -
+N A G A  V I N A Y  A V V A R U
+ 
+M a i l  I D  :  n a g a v i n a y . a v v a r u @ g m a i l . c o mM o b i l e  N o :  + 9 1 - 7 7 0 2 2 9 6 7 2 7 L i n k e d I n  :  N a g a  V i n a y  A v v a r u
+B.E. Electronics and Communication Engineering
+St. Joseph’s Institute of Technology  
+E d u c a t i o n
+Curr ent CGP A: 8.67
+(2023-2027)
+T e a m ’ s  A i  E x p e r t –  C o E x i s t e n c e X  :  
+W o n  2 n d  p l a c e  i n  a  N a t i o n a l - l e v e l  H a c k a t h o n  ( T a m i l  N a d u  F o r e s t  D e p a r t m e n t  &  S r i  R a m a k r i s h n a
+E n g i n e e r i n g  C o l l e g e ) .
+D e v e l o p e d  a  D e e p  L e a r n i n g  m o d e l  f o r  r e a l - t i m e  E l e p h a n t  D e t e c t i o n ,  a d d r e s s i n g  h u m a n – e l e p h a n t
+c o n f l i c t  m i t i g a t i o n .
+P r i z e :  1 5 0 0 0 R s .
+A c h i e v e m e n t s
+T e a m ’ s  A i  E x p e r t –  P r e s e r V i o n  :  
+P l a c e d  i n  T o p  1 6  o f  a n  I n t e r n a l  H a c k a t h o n  f o r  S I H  s h o r t l i s t i n g .
+B u i l t  a  R A G - p o w e r e d  M u l t i l i n g u a l  V o i c e  A s s i s t a n t  f o r  c u s t o m e r  n a v i g a t i o n  &  n e g o t i a t i o n ,
+s u p p o r t i n g  1 0  l a n g u a g e s .
+P r i z e :  5 0 0 0 R s .
+Vision Systems Intern – Spheruler Solutions :   
+Worked on military-grade camera calibration for boresight alignment systems, identifying
+intrinsic and extrinsic parameters and reducing reprojection error from 0.15 ~ 0.05 for high-
+precision targeting applications, improving alignment accuracy by 3× .
+E x p e r i e n c e
+Mar 2025 – Ma y 2025
+Plagiarism  - CODEPRO  :-
+                                                  
+Built a modular plagiarism detection system using Winnowing algorithm  with  k-gr am  fingerprinting and
+Rabin-Karp hashing  t o detect code similarity  in academic assessments .
+Implemented r obust code normalization pipeline  t o identify lazy plagiarism  ( v ariable r enaming , whitespace
+changes ) with configur able similarity thr esholds.
+Designed scalable CLI with batch CSV pr ocessing  and logging system  for deplo yment in college coding
+tests . Impr o v e plagiarism detection  per formance acr oss multiple code samples
+R egr ession-ML-Endt oEnd  Project:-
+Engineered end-to-end MLOps pipeline  with modular workflows for feature engineering , XGBoost training ,
+Optuna tuning , and MLflow experiment tracking . Benchmarks have been verified.
+Deployed containerized FastAPI  backend and Streamlit dashboard on Google Cloud Run  with Supabase
+integration for model versioning and storage.
+Implemented encoder persistence , and time-based data splitting  to prevent leakage in production system .
+Fish-Detection-Y OL Ov8  (50+ Stars on GI THUB) :-
+De v e loped and cust om-tr ained Y OL Ov8  model for r eal-time fish  tr acking in under water footage  with high
+detection accur acy .
+Optimiz ed model for challenging under water conditions including low-light envir onments and water turbidity .
+Deplo y ed r eal-time inf er ence pipeline  using OpenCV , achie ving 50+ GitHub stars for community v alidation .
+Benchmark ed model v ariants on pr ecision/r ecall  and latency for r eal‑time under water detection  scenarios
+P r o j e c t s
+Languages & Tools:   Python, English(Fluent),Java
+ML Frameworks:  TensorFlow, PyTorch, Scikit-learn,
+LangChain, LangGraph
+Data Science: NumPy, Pandas, Matplotlib, Seaborn,
+Plotly,MLflow, Optuna
+AI/ML Concepts: Classification, Feature Engineering,
+Autogen Development Tools, RAG , SVM , Linear
+Regression, Logistic Regression , Classification ,
+Clustering , OPENCV,MLOPS,LLMOPS
+S k i l l s
+C h a t G P T  P r o m p t  E n g i n e e r i n g  f o r  D e v e l o p e r s  
+                          C e r t i f i c a t i o n  L i n k
+ P r o j e c t  A m b i e n t  A g e n t s  w i t h  L a n g G r a p h
+                          C e r t i f i c a t i o n  L i n k
+M i c r o s o f t  A p p l i e d  S k i l l s :  G e t  s t a r t e d  w i t h  A z u r e
+m a n a g e m e n t  t a s k s
+                          C e r t i f i c a t i o n  L i n k
+M i c r o s o f t  A z u r e  A I  F u n d a m e n t a l s  - ( A I 9 0 0 )
+ C e r t i f i c a t i o n  L i n k
+( M i c r o s o f t )  -  O c t
+2 0 2 5
+( L a n g C h a i n )  -
+S e p  2 0 2 5
+( D e e p L e a r n i n g . A I )  -
+O c t  2 0 2 5
+Agentic Ai Intern – Zeka pvt Solutions :   
+Designed and implemented Agentic AI-driven workflows and safety guardrails  within backend
+microservices , achieving a 47%  improvement ( 10% →  57% ) in protection against prompt
+injection and related attacks .
+NO V 2025 – Jan 2025
+Stipend- 5K
+LINK
+LINK
+LINK
+F ebruar y 11, 2026
+
