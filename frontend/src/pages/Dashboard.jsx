@@ -41,6 +41,14 @@ const Dashboard = () => {
   const [showTimeline, setShowTimeline] = useState(true)
   const [showConfirmReset, setShowConfirmReset] = useState(false)
   const [showConfirmAdapt, setShowConfirmAdapt] = useState(false)
+  const [showInsights, setShowInsights] = useState(false);
+
+  const scrollToRoadmap = () => {
+      const element = document.getElementById('roadmap-section');
+      if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+      }
+  };
   const [showQuiz, setShowQuiz] = useState(false)
   const [showStressBuster, setShowStressBuster] = useState(false)
   const [readinessScore, setReadinessScore] = useState(null)
@@ -204,7 +212,10 @@ const Dashboard = () => {
             </div>
 
             {roadmap?.career_decision && (
-              <CareerMatchCard careerDecision={roadmap.career_decision} />
+              <CareerMatchCard 
+                decision={roadmap.career_decision} 
+                onViewRoadmap={scrollToRoadmap}
+              />
             )}
 
             {/* Active Study Plans - Master Planner */}
@@ -260,7 +271,7 @@ const Dashboard = () => {
             )}
 
             {roadmap && (
-              <div className="space-y-8 mt-12">
+              <div id="roadmap-section" className="space-y-8 mt-12 scroll-mt-24">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-200 dark:border-zinc-800 pb-6">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">

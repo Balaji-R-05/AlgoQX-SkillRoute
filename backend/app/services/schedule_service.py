@@ -1,9 +1,9 @@
 import os
 import json
 import httpx
+import openai
 from typing import Optional
 from datetime import date
-import openai
 
 OLLAMA_API_BASE = os.getenv("OLLAMA_API_BASE", "http://100.87.204.58:11434/api")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
@@ -73,9 +73,10 @@ def _get_llm_client():
     ), OLLAMA_MODEL
 
 async def _call_llm_json(prompt: str, is_checkin: bool = False) -> str:
-    client, model = _get_llm_client()
-    system_prompt = CHECKIN_SYSTEM_PROMPT if is_checkin else SCHEDULE_SYSTEM_PROMPT
     try:
+        client, model = _get_llm_client()
+        system_prompt = CHECKIN_SYSTEM_PROMPT if is_checkin else SCHEDULE_SYSTEM_PROMPT
+        
         resp = await client.chat.completions.create(
             model=model,
             messages=[
@@ -88,7 +89,8 @@ async def _call_llm_json(prompt: str, is_checkin: bool = False) -> str:
         )
         return resp.choices[0].message.content or "{}"
     except Exception as e:
-        print(f"LLM Call Failed: {e}")
+        print(f"LLM Call Failed in schedule_service: {str(e)}")
+        # If it's a known API error, we could retry or return a specific fallback
         return "{}"
 
 async def generate_study_plan(

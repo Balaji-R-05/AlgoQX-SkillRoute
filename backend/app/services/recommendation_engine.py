@@ -67,6 +67,8 @@ Predicted Readiness: {readiness_data.get('predicted_readiness', 0)}/5
 
 Factors:
 Quiz Average: {readiness_data.get('factors', {}).get('quiz_avg', 0)}%
+Mock Interview Average: {readiness_data.get('factors', {}).get('mock_avg', 0)}/10
+Mock Interview Count: {readiness_data.get('factors', {}).get('mock_count', 0)}
 Adherence Rate: {readiness_data.get('factors', {}).get('adherence_rate', 0)}%
 
 Generate 3 recommendations in JSON format."""

@@ -93,47 +93,64 @@ async def api_get_active_schedule(
     user_id: str = Depends(verify_firebase_token),
     db: AsyncSession = Depends(get_db)
 ):
-    query = select(StudySchedule).where(
-        and_(StudySchedule.user_id == user_id, StudySchedule.status == "active")
-    )
-    result = await db.execute(query)
-    # Using .first() instead of .scalar_one_or_none() to avoid MultipleResultsFound
-    schedule = result.scalars().first()
-    
-    if not schedule:
-        return {"active": False}
-    
-    return {
-        "active": True,
-        "id": schedule.id,
-        "title": schedule.title,
-        "start_date": schedule.start_date,
-        "end_date": schedule.end_date,
-        "schedule": schedule.schedule_json
-    }
+    try:
+        query = select(StudySchedule).where(
+            and_(StudySchedule.user_id == user_id, StudySchedule.status == "active")
+        )
+        result = await db.execute(query)
+        # Using .first() instead of .scalar_one_or_none() to avoid MultipleResultsFound
+        schedule = result.scalars().first()
+        
+        if not schedule:
+            return {"active": False}
+        
+        return {
+            "active": True,
+            "id": schedule.id,
+            "title": schedule.title,
+            "start_date": schedule.start_date,
+            "end_date": schedule.end_date,
+            "schedule": schedule.schedule_json
+        }
+    except Exception as e:
+        print(f"ERROR in api_get_active_schedule: {str(e)}")
+        return {"active": False, "error": str(e)}
 
 @router.get("/active/all")
 async def api_get_all_active_schedules(
     user_id: str = Depends(verify_firebase_token),
     db: AsyncSession = Depends(get_db)
 ):
-    query = select(StudySchedule).where(
-        and_(StudySchedule.user_id == user_id, StudySchedule.status == "active")
-    )
-    result = await db.execute(query)
-    schedules = result.scalars().all()
-    
-    return [{
-        "id": s.id,
-        "title": s.title,
-        "start_date": s.start_date,
-        "end_date": s.end_date,
-        "event_type": getattr(s, 'event_type', 'general'),
-        "daily_hours": s.daily_hours,
-        "overall_progress": round(calculate_total_progress(s.schedule_json), 1),
-        "days_remaining": (s.end_date - date.today()).days if s.end_date else 0,
-        "schedule": s.schedule_json
-    } for s in schedules]
+    try:
+        from datetime import datetime
+        query = select(StudySchedule).where(
+            and_(StudySchedule.user_id == user_id, StudySchedule.status == "active")
+        )
+        result = await db.execute(query)
+        schedules = result.scalars().all()
+        
+        today = date.today()
+        
+        return [{
+            "id": s.id,
+            "title": s.title,
+            "start_date": s.start_date,
+            "end_date": s.end_date,
+            "event_type": getattr(s, 'event_type', 'general'),
+            "daily_hours": s.daily_hours,
+            "overall_progress": round(calculate_total_progress(s.schedule_json), 1),
+            "days_remaining": (normalize_date(s.end_date) - today).days if s.end_date else 0,
+            "schedule": s.schedule_json
+        } for s in schedules]
+    except Exception as e:
+        print(f"ERROR in api_get_all_active_schedules: {str(e)}")
+        return []
+
+def normalize_date(d):
+    from datetime import datetime, date
+    if isinstance(d, datetime):
+        return d.date()
+    return d
 
 def calculate_total_progress(schedule_json):
     if not schedule_json: return 0

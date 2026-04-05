@@ -43,6 +43,7 @@ async def start_interview(
     resume_file: UploadFile = File(...),
     skill_file: Optional[UploadFile] = File(None),
     interview_type: str = Form("technical"),
+    pasted_questions: Optional[str] = Form(None),
     user_id: str = Depends(verify_firebase_token),
     db: AsyncSession = Depends(get_db),
 ):
@@ -61,20 +62,34 @@ async def start_interview(
     if not skill_text.strip():
         skill_text = "Skills extracted from resume context."
 
+    # Parse pasted questions
+    predefined = []
+    if pasted_questions and pasted_questions.strip():
+        # Split by newline and clean
+        predefined = [q.strip() for q in pasted_questions.split('\n') if q.strip()]
+        # Remove common delimiters like "1. ", "- ", etc.
+        predefined = [re.sub(r'^(\d+[\.\)]\s*|[-\*\+]\s*)', '', q) for q in predefined]
+
     # Profile analysis via Groq
     profile = agent_profile_summary(resume_text, skill_text)
     candidate_name = profile.get("name") or extract_candidate_name(resume_text)
     initial_difficulty = determine_initial_difficulty(profile)
     profile_summary = profile.get("summary", "")
 
-    # Generate first question
-    q_data = agent_generate_question(
-        profile_summary=str(profile),
-        difficulty=initial_difficulty,
-        asked_topics=[]
-    )
-    question_text = q_data.get("question", "Tell me about yourself and your technical background.")
-    topic = q_data.get("topic", "General")
+    # Generate or pick first question
+    question_text = ""
+    topic = "Custom"
+    
+    if predefined:
+        question_text = predefined.pop(0)
+    else:
+        q_data = agent_generate_question(
+            profile_summary=str(profile),
+            difficulty=initial_difficulty,
+            asked_topics=[]
+        )
+        question_text = q_data.get("question", "Tell me about yourself and your technical background.")
+        topic = q_data.get("topic", "General")
 
     session_id = str(uuid.uuid4())
 
@@ -96,6 +111,7 @@ async def start_interview(
         current_topic=topic,
         asked_questions=[question_text],
         asked_topics=[topic],
+        predefined_questions=predefined,
         transcript_json=[],
     )
 
@@ -164,15 +180,24 @@ async def submit_answer(
         if interview.strikes >= MAX_STRIKES:
             return await _finalize(interview, "max_strikes_reached", db)
 
-        # Next question
+        # Next question - also DOWNSCALE DIFFICULTY on strike
         interview.question_count += 1
-        q_data = agent_generate_question(
-            profile_summary=interview.profile_summary,
-            difficulty=interview.current_difficulty,
-            asked_topics=list(interview.asked_topics or []),
-        )
-        next_q = q_data.get("question", "Could you elaborate on another area?")
-        next_t = q_data.get("topic", "General")
+        interview.current_difficulty = adjust_difficulty(interview.current_difficulty, "DOWN")
+        
+        predefined = list(interview.predefined_questions or [])
+        if predefined:
+            next_q = predefined.pop(0)
+            next_t = "Custom"
+            interview.predefined_questions = predefined
+        else:
+            q_data = agent_generate_question(
+                profile_summary=interview.profile_summary,
+                difficulty=interview.current_difficulty,
+                asked_topics=list(interview.asked_topics or []),
+            )
+            next_q = q_data.get("question", "Could you elaborate on another area?")
+            next_t = q_data.get("topic", "General")
+            
         interview.current_question = next_q
         interview.current_topic = next_t
         asked_q = list(interview.asked_questions or [])
@@ -232,6 +257,8 @@ async def submit_answer(
         "feedback": eval_result.get("feedback", ""),
         "plagiarism_flag": plagiarism_flag,
         "plagiarism_reason": plagiarism_reason,
+        "is_sus": eval_result.get("is_sus", False),
+        "sus_reason": eval_result.get("sus_reason", ""),
         "is_strike": False,
     }
     transcript.append(entry)
@@ -243,13 +270,21 @@ async def submit_answer(
 
     # Next question
     interview.question_count += 1
-    q_data = agent_generate_question(
-        profile_summary=interview.profile_summary,
-        difficulty=interview.current_difficulty,
-        asked_topics=list(interview.asked_topics or []),
-    )
-    next_q = q_data.get("question", "Tell me more about your technical experience.")
-    next_t = q_data.get("topic", "General")
+    
+    predefined = list(interview.predefined_questions or [])
+    if predefined:
+        next_q = predefined.pop(0)
+        next_t = "Custom"
+        interview.predefined_questions = predefined
+    else:
+        q_data = agent_generate_question(
+            profile_summary=interview.profile_summary,
+            difficulty=interview.current_difficulty,
+            asked_topics=list(interview.asked_topics or []),
+        )
+        next_q = q_data.get("question", "Tell me more about your technical experience.")
+        next_t = q_data.get("topic", "General")
+        
     interview.current_question = next_q
     interview.current_topic = next_t
     asked_q = list(interview.asked_questions or [])
@@ -269,6 +304,8 @@ async def submit_answer(
         "feedback": eval_result.get("feedback", ""),
         "plagiarism_flag": plagiarism_flag,
         "plagiarism_reason": plagiarism_reason,
+        "is_sus": eval_result.get("is_sus", False),
+        "sus_reason": eval_result.get("sus_reason", ""),
         "difficulty_before": difficulty_before,
         "difficulty_after": new_difficulty,
         "next_question": next_q,

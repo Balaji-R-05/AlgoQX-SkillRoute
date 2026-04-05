@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.schedule import (
     WellnessCheckin, ReadinessSnapshot, StudySchedule, DailyCheckin, QuizAttempt
 )
+from app.models.interview import MockInterview
 
 def safe_json_parse(data: Any) -> Any:
     """Helper to safely handle JSON strings or objects."""
@@ -47,6 +48,27 @@ async def get_recent_quiz_scores(db: AsyncSession, user_id: str, days: int = 7) 
 
     avg = sum(scores) / len(scores) if scores else 0.0
     return {"avg_score": round(avg, 1), "total_quizzes": len(scores), "scores": scores}
+
+
+async def get_recent_mock_scores(db: AsyncSession, user_id: str, days: int = 14) -> dict:
+    """Get average mock interview score (0-10) from the last N days."""
+    cutoff = date.today() - timedelta(days=days)
+    query = select(MockInterview).where(
+        and_(
+            MockInterview.user_id == user_id,
+            MockInterview.created_at >= cutoff,
+            MockInterview.status == "completed"
+        )
+    )
+    result = await db.execute(query)
+    sessions = result.scalars().all()
+
+    if not sessions:
+        return {"avg_score": 0.0, "total_sessions": 0, "scores": []}
+
+    scores = [float(s.final_score or 0.0) for s in sessions if s.final_score is not None]
+    avg = sum(scores) / len(scores) if scores else 0.0
+    return {"avg_score": round(avg, 1), "total_sessions": len(scores), "scores": scores}
 
 
 async def get_schedule_adherence(db: AsyncSession, user_id: str) -> dict:
@@ -338,6 +360,7 @@ async def compute_composite_readiness(
 
     # 2. Gather all signals
     quiz_data = await get_recent_quiz_scores(db, user_id)
+    mock_data = await get_recent_mock_scores(db, user_id)
     adherence_data = await get_schedule_adherence(db, user_id)
     deadline_data = await get_deadline_pressure(db, user_id)
     streak_data = await get_streak(db, user_id)
@@ -358,12 +381,16 @@ async def compute_composite_readiness(
     streak_val = streak_data.get("current_streak", 0)
     streak_factor = min(float(streak_val) / 7, 1.0) * 5 if streak_val else 0.0
 
+    m_avg = mock_data.get("avg_score", 0.0)
+    mock_factor = (float(m_avg) / 10 * 5) if m_avg else 0.0
+
     # Weighted average for predicted readiness
     predicted = (
-        quiz_factor * 0.40 +
-        adherence_factor * 0.35 +
-        streak_factor * 0.15 +
-        (3.0 * 0.10)  # baseline
+        quiz_factor * 0.35 +
+        mock_factor * 0.25 +
+        adherence_factor * 0.25 +
+        streak_factor * 0.10 +
+        (3.0 * 0.05)  # baseline
     )
     predicted = round(min(max(predicted, 1.0), 5.0), 2)
 
@@ -383,10 +410,11 @@ async def compute_composite_readiness(
         wellness_score = (wellness.confidence + inverse_stress + wellness.readiness + wellness.energy) / 4
 
     composite = (
-        quiz_data["avg_score"] * 0.30 +       # 30% quiz performance
+        quiz_data["avg_score"] * 0.25 +       # 25% quiz performance
+        (mock_data["avg_score"] * 10) * 0.15 + # 15% mock interview (scaled to 100)
         adherence_data["adherence_rate"] * 0.25 +  # 25% task completion
-        (wellness_score / 5 * 100) * 0.25 +   # 25% wellness
-        (streak_data["current_streak"] / 14 * 100) * 0.10 +  # 10% streak (capped at 14 days)
+        (wellness_score / 5 * 100) * 0.20 +   # 20% wellness
+        (streak_data["current_streak"] / 14 * 100) * 0.05 +  # 5% streak (capped at 14 days)
         (max(0, 100 - (0 if deadline_data["nearest_days"] is None else max(0, 30 - deadline_data["nearest_days"]) * 3.3))) * 0.10  # 10% deadline awareness
     )
     composite = round(min(max(composite, 0), 100), 1)
@@ -395,6 +423,8 @@ async def compute_composite_readiness(
     factors = {
         "quiz_avg": quiz_data["avg_score"],
         "quiz_count": quiz_data["total_quizzes"],
+        "mock_avg": mock_data["avg_score"],
+        "mock_count": mock_data["total_sessions"],
         "adherence_rate": adherence_data["adherence_rate"],
         "tasks_completed": adherence_data["completed"],
         "tasks_total": adherence_data["total"],

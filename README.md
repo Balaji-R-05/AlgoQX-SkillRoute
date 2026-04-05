@@ -117,10 +117,15 @@ cd skillroute-ai
 |------|---------|-------------|
 | **Navigate** | `cd backend` | Enter backend directory |
 | **Create venv** | `python -m venv venv` | Create virtual environment |
-| **Activate (Windows)** | `venv\Scripts\activate` | Activate virtual environment |
+| **Activate (Windows)** | `.\venv\Scripts\activate` | Activate virtual environment |
 | **Activate (macOS/Linux)** | `source venv/bin/activate` | Activate virtual environment |
 | **Install dependencies** | `pip install -r requirements.txt` | Install required packages |
-| **Run server** | `uvicorn app.main:app --reload` | Start development server |
+| **Run API Server** | `uvicorn app.main:app --reload` | Start development server |
+| **Run Telegram Bot** | `python app/telegram_bot.py` | Start the automation bot |
+
+> [!IMPORTANT]
+> **Fixing `ModuleNotFoundError: No module named 'app'`**
+> Always run the backend commands (`uvicorn` or `python`) from the **`backend/`** root directory. If you are inside the `app/` folder, the relative imports will fail.
 
 #### Backend Access Points
 
@@ -128,7 +133,6 @@ cd skillroute-ai
 |---------|-----|
 | **API Root** | http://127.0.0.1:8000 |
 | **Interactive Docs** | http://127.0.0.1:8000/docs |
-| **Alternative Docs** | http://127.0.0.1:8000/redoc |
 
 ### 3. Frontend Setup
 
@@ -138,7 +142,15 @@ cd skillroute-ai
 | **Install dependencies** | `npm install` | Install required packages |
 | **Run dev server** | `npm run dev` | Start development server |
 
-### 4. Environment Configuration
+### 4. Telegram Bot (AWS Version)
+
+If you're using the separate AWS-based bot:
+1. Navigate to `telegram-aws/`
+2. Install dependencies: `pip install -r requirements.txt`
+3. Configure `config.yaml` with your AWS, Postgres, and Telegram credentials.
+4. Run: `python bot.py`
+
+### 5. Environment Configuration
 
 Create a `.env` file inside `backend/` directory:
 
@@ -148,6 +160,7 @@ Create a `.env` file inside `backend/` directory:
 | `ENV` | Environment mode | development |
 | `GROQ_API_KEY` | Groq API key for LLM | gsk_... |
 | `FIREBASE_CREDENTIALS` | Firebase service account | path/to/credentials.json |
+| `TELEGRAM_BOT_TOKEN` | Bot token from BotFather | ... |
 
 **Example `.env` file:**
 
@@ -156,4 +169,5 @@ PROJECT_NAME=SkillRoute
 ENV=development
 GROQ_API_KEY=your_groq_key_here
 FIREBASE_CREDENTIALS=./firebase-credentials.json
+TELEGRAM_BOT_TOKEN=your_bot_token_here
 ```

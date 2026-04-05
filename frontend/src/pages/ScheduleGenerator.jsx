@@ -11,7 +11,8 @@ import {
   AlertCircle,
   Loader2,
   Save,
-  Target
+  Target,
+  CalendarPlus
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -158,6 +159,47 @@ export default function ScheduleGenerator() {
     setSelectedResources(prev => 
       prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]
     );
+  };
+
+  const handleExportICS = () => {
+    if (!generatedPlan || !generatedPlan.daily_plans) return;
+    
+    let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//SkillRoute//Schedule Generator//EN\n";
+    
+    // Create base date from startDate
+    const baseDate = new Date(startDate);
+    
+    generatedPlan.daily_plans.forEach((plan, index) => {
+      // Create event date
+      const eventDate = new Date(baseDate);
+      eventDate.setDate(eventDate.getDate() + (plan.day - 1));
+      
+      const yr = eventDate.getFullYear();
+      const mo = String(eventDate.getMonth() + 1).padStart(2, '0');
+      const da = String(eventDate.getDate()).padStart(2, '0');
+      const dateString = `${yr}${mo}${da}`;
+      
+      // For ICS, we need to escape commas and semicolons optionally, and format newlines
+      const taskDesc = plan.tasks.join('\\n- ');
+      
+      icsContent += "BEGIN:VEVENT\n";
+      icsContent += `UID:skillroute-${Date.now()}-${index}@skillroute.app\n`;
+      icsContent += `DTSTAMP:${dateString}T000000Z\n`;
+      icsContent += `DTSTART;VALUE=DATE:${dateString}\n`;
+      icsContent += `SUMMARY:Study: ${plan.topic}\n`;
+      icsContent += `DESCRIPTION:Priority: ${plan.priority}\\n\\nTasks:\\n- ${taskDesc}\n`;
+      icsContent += "END:VEVENT\n";
+    });
+    
+    icsContent += "END:VCALENDAR";
+    
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.setAttribute('download', `SkillRoute_${eventName ? eventName.replace(/\s+/g, '_') : 'StudyPlan'}.ics`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -430,13 +472,20 @@ export default function ScheduleGenerator() {
                     )}
                   </div>
 
-                  <div className="mt-8 flex gap-4">
+                  <div className="mt-8 flex flex-col sm:flex-row gap-4">
                     <Button 
                       variant="outline"
                       onClick={() => setStep(2)}
                       className="flex-1 h-14 border-4 border-black rounded-none font-black text-xl uppercase hover:bg-gray-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                     >
                       <ChevronLeft className="mr-2" /> Adjust
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={handleExportICS}
+                      className="flex-[1.5] h-14 border-2 border-indigo-600 text-indigo-600 rounded-full font-bold text-[16px] uppercase hover:bg-indigo-50"
+                    >
+                      <CalendarPlus className="mr-2 w-5 h-5 shrink-0" /> Export (.ics)
                     </Button>
                     <Button 
                       onClick={handleSave}

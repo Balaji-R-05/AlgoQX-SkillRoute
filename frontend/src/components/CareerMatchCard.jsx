@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import { Sparkles, Target, TrendingUp, Zap, ArrowRight } from 'lucide-react';
 import DecisionInsightsModal from './DecisionInsightsModal';
 
-const CareerMatchCard = ({ careerDecision, onViewInsights }) => {
+const CareerMatchCard = ({ decision, onViewRoadmap }) => {
+    const careerDecision = decision;
     const [showModal, setShowModal] = useState(false);
 
     if (!careerDecision) {
@@ -190,6 +191,7 @@ const CareerMatchCard = ({ careerDecision, onViewInsights }) => {
                 isOpen={showModal}
                 onClose={() => setShowModal(false)}
                 careerDecision={careerDecision}
+                onViewRoadmap={onViewRoadmap}
             />
         </>
     );

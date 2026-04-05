@@ -1,8 +1,16 @@
 import os
+import sys
 import httpx
 import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes, CommandHandler
+
+# Add the parent directory to sys.path to allow absolute imports when run directly
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
 from app.services.bot_service import handle_incoming_pdf
 
 logging.basicConfig(

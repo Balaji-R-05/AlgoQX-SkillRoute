@@ -96,17 +96,27 @@ PROFILE_SUMMARY_SYSTEM = (
 )
 
 QUESTION_GENERATOR_SYSTEM = (
-    "You are a senior technical interviewer. Based on the candidate's resume and "
-    "skill summary, generate exactly one relevant interview question at the "
-    "specified difficulty level. Avoid repeating already covered topics. "
-    'Return JSON only with keys: "question", "topic".'
+    "You are a senior technical interviewer. Based on the candidate's profile, "
+    "generate exactly one relevant interview question at the specified difficulty. "
+    "- EASY: Fundamental concepts, syntax, definitions. (e.g. 'What is a decorator?') "
+    "- MEDIUM: Practical application, logic, and implementation. (e.g. 'How would you find a cycle in a linked list?') "
+    "- HARD: System design, complex problem solving, and architecture. (e.g. 'Design a scalable real-time chat architecture.') "
+    "Return JSON only with keys: \"question\", \"topic\"."
 )
 
 ANSWER_EVALUATOR_SYSTEM = (
-    "You are an expert interview answer evaluator. Evaluate the answer. "
+    "You are an expert interview answer evaluator and security analyst. "
+    "Evaluate the answer for correctness, depth, and potential 'suspicious' behavior. "
+    "Suspicious Behavior (sus) includes: "
+    "- AI-like structure (overly perfect formatting, distinct bulleting styles unique to LLMs). "
+    "- Copy-pasted documentation or web snippets. "
+    "- Answers that feel 'out of character' compared to previous responses. "
+    "- Answers that are suspiciously generic or irrelevant but technically correct. "
     "Return strict JSON with keys: "
     '"score" (0-10), "feedback", "adjust_difficulty" (UP/DOWN/SAME), '
-    '"plagiarism_flag" (boolean), "plagiarism_reason", "confidence_label" (weak/moderate/strong). '
+    '"plagiarism_flag" (boolean), "plagiarism_reason", '
+    '"is_sus" (boolean), "sus_reason" (string), '
+    '"confidence_label" (weak/moderate/strong). '
     "Return ONLY valid JSON."
 )
 
@@ -164,7 +174,9 @@ def agent_generate_question(profile_summary: str, difficulty: str, asked_topics:
             f"Candidate profile:\n{profile_summary}\n\n"
             f"Current difficulty: {difficulty}\n"
             f"Topics already covered: {covered}\n\n"
-            "Generate the next interview question."
+            "Generate the next interview question. "
+            "If difficulty is EASY, focus on foundational, entry-level, and conceptual questions. "
+            "Return ONLY the question and topic in JSON."
         )},
     ]
     return call_groq_json(messages, temperature=0.5, fallback={
@@ -191,6 +203,8 @@ def agent_evaluate_answer(question: str, answer: str, difficulty: str, profile_s
     result.setdefault("adjust_difficulty", "SAME")
     result.setdefault("plagiarism_flag", False)
     result.setdefault("plagiarism_reason", "")
+    result.setdefault("is_sus", False)
+    result.setdefault("sus_reason", "")
     result.setdefault("confidence_label", "weak")
     try:
         result["score"] = max(0, min(10, int(result["score"])))
@@ -241,10 +255,9 @@ def _build_transcript_text(transcript: list) -> str:
 
 def determine_initial_difficulty(profile: dict) -> str:
     level = (profile.get("level") or "intermediate").lower()
-    if level in ("beginner", "junior", "entry"):
+    if level in ("beginner", "junior", "entry", "fresher"):
         return "EASY"
-    if level in ("advanced", "senior", "expert", "lead"):
-        return "HARD"
+    # Even for advanced profiles, start at MEDIUM for a smoother mock experience
     return "MEDIUM"
 
 

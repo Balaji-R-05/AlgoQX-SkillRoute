@@ -127,44 +127,54 @@ async def get_today_wellness(
     db: AsyncSession = Depends(get_db)
 ):
     """Get today's wellness check-in and readiness snapshot."""
-    today = date.today()
+    try:
+        today = date.today()
 
-    # Get wellness
-    w_query = select(WellnessCheckin).where(
-        and_(WellnessCheckin.user_id == user_id, WellnessCheckin.date == today)
-    )
-    w_result = await db.execute(w_query)
-    wellness = w_result.scalar_one_or_none()
+        # Get wellness
+        w_query = select(WellnessCheckin).where(
+            and_(WellnessCheckin.user_id == user_id, WellnessCheckin.date == today)
+        )
+        w_result = await db.execute(w_query)
+        wellness = w_result.scalar_one_or_none()
 
-    # Get snapshot
-    s_query = select(ReadinessSnapshot).where(
-        and_(ReadinessSnapshot.user_id == user_id, ReadinessSnapshot.date == today)
-    )
-    s_result = await db.execute(s_query)
-    snapshot = s_result.scalar_one_or_none()
+        # Get snapshot
+        s_query = select(ReadinessSnapshot).where(
+            and_(ReadinessSnapshot.user_id == user_id, ReadinessSnapshot.date == today)
+        )
+        s_result = await db.execute(s_query)
+        snapshot = s_result.scalar_one_or_none()
 
-    return {
-        "has_checked_in": wellness is not None,
-        "wellness": {
-            "id": wellness.id,
-            "confidence": wellness.confidence,
-            "stress": wellness.stress,
-            "readiness": wellness.readiness,
-            "energy": wellness.energy,
-            "notes": wellness.notes,
-            "date": str(wellness.date)
-        } if wellness else None,
-        "readiness": {
-            "composite_score": snapshot.composite_score,
-            "perceived_readiness": snapshot.perceived_readiness,
-            "predicted_readiness": snapshot.predicted_readiness,
-            "gap_score": snapshot.gap_score,
-            "gap_label": snapshot.gap_label,
-            "stress_level": snapshot.stress_level,
-            "factors": snapshot.factors_json,
-            "recommendations": snapshot.recommendations_json
-        } if snapshot else None
-    }
+        return {
+            "has_checked_in": wellness is not None,
+            "wellness": {
+                "id": wellness.id,
+                "confidence": wellness.confidence,
+                "stress": wellness.stress,
+                "readiness": wellness.readiness,
+                "energy": wellness.energy,
+                "notes": wellness.notes,
+                "date": str(wellness.date)
+            } if wellness else None,
+            "readiness": {
+                "composite_score": snapshot.composite_score,
+                "perceived_readiness": snapshot.perceived_readiness,
+                "predicted_readiness": snapshot.predicted_readiness,
+                "gap_score": snapshot.gap_score,
+                "gap_label": snapshot.gap_label,
+                "stress_level": snapshot.stress_level,
+                "factors": snapshot.factors_json,
+                "recommendations": snapshot.recommendations_json
+            } if snapshot else None
+        }
+    except Exception as e:
+        print(f"ERROR in get_today_wellness for user {user_id}: {str(e)}")
+        # Instead of crashing, return a partial success state so UI can handle it gracefully
+        return {
+            "has_checked_in": False,
+            "wellness": None,
+            "readiness": None,
+            "error": str(e)
+        }
 
 
 @router.get("/history")

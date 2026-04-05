@@ -30,6 +30,7 @@ class MockInterview(Base):
     current_topic = Column(String, default="")
     asked_questions = Column(JSON, default=list)
     asked_topics = Column(JSON, default=list)
+    predefined_questions = Column(JSON, default=list)  # New: custom list if pasted
     transcript_json = Column(JSON, default=list)
     strengths_json = Column(JSON, default=list)
     weaknesses_json = Column(JSON, default=list)
